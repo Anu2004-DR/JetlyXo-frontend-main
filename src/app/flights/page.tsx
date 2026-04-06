@@ -62,26 +62,16 @@ export default function FlightsPage() {
   );
 
   async function handleBook(f: any) {
-    // 👉 send selected flight to booking API
-    await apiClient.post("/api/bookings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        bookingType: "FLIGHT",
-        flightId: null, // external → no DB id
-        passengerName: "Test User",
-        passengerAge: 22,
-        passengerPhone: "9999999999",
-        passengerEmail: "test@mail.com",
-        totalPrice: f.price,
-
-        // 🔥 IMPORTANT: store snapshot
-        flight: f
-      }),
-    });
-
-    alert("Booking created");
+    const token = localStorage.getItem("jetly_token");
+  
+    if (!token) {
+      alert("Please login first");
+      return;
+    }
+  
+    // ✅ redirect to passenger page
+    window.location.href = `/flight-passenger?flightId=${f.id}&price=${f.price}&airline=${encodeURIComponent(
+      f.airline
+    )}&duration=${encodeURIComponent(f.duration || "")}`;
   }
 }

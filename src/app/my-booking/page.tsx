@@ -70,7 +70,7 @@ if (!token) {
 
   /* ============================= REFUND ============================= */
   const getDeparture = (b: Booking) =>
-    b.bus?.departureTime || b.train?.departureTime || b.flight?.dep;
+    b.bus?.departureTime || b.train?.departureTime || b.flightData?.departureTime;
 
   const getRefund = (b: Booking) => {
     const dep = getDeparture(b);
@@ -312,4 +312,3 @@ if (!token) {
     </div>
   );
 }
-console.log("bookings", bookings);

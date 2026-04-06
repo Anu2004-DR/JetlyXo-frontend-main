@@ -80,7 +80,8 @@ export default function TicketPage() {
     );
   }
 
-  if (!booking || booking.status !== "CONFIRMED") {
+  //if (!booking || booking.status !== "CONFIRMED") 
+  if (!booking){
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
         Booking not confirmed

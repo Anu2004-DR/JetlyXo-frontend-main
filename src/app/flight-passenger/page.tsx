@@ -2,6 +2,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { createBooking } from "@/lib/api";
 
 export default function FlightPassengerPage() {
   const params = useSearchParams();
@@ -19,7 +20,7 @@ export default function FlightPassengerPage() {
 
   async function handleContinue() {
     if (!flightId) {
-      alert("Flight info missing");
+      alert("Bus info missing");
       return;
     }
   
@@ -29,42 +30,33 @@ export default function FlightPassengerPage() {
     }
   
     try {
-      const res = await fetch("http://localhost:5000/api/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          bookingType: "FLIGHT",
-          flightId: Number(flightId),
-          passengerName: name,
-          passengerAge: Number(age),
-          passengerPhone: phone,
-          passengerEmail: email,
-          totalPrice: Number(price),
-        }),
-      });
   
-      const data = await res.json();
+      const payload = {
+        bookingType: "FLIGHT",
+        entityId: Number(flightId), // ✅ FIXED
   
-      if (!res.ok) {
-        alert(data.message || "Booking failed");
-        return;
-      }
+        passengerName: name,
+        passengerAge: Number(age),
+        passengerPhone: phone,
+        passengerEmail: email
+      };
   
-      const bookingId = data?.data?.id;
+      console.log("BOOKING PAYLOAD:", payload); 
+  
+      const res = await createBooking(payload);
+  
+      const bookingId = res?.booking?.id; // ✅ FIXED
   
       if (!bookingId) {
-        alert("Booking ID missing");
+        alert("Booking failed");
         return;
       }
   
-     
       router.push(`/payment?bookingId=${bookingId}`);
   
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Something went wrong");
+      alert(err?.message || "Error creating booking");
     }
   }
 

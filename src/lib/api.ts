@@ -1,8 +1,23 @@
 import apiClient from "@/lib/apiClient";
 
-/* ==============================
-   TYPES (KEEP YOUR TYPES SAME)
-============================== */
+
+
+export type FlightSearchParams = {
+  from?: string;
+  to?: string;
+  departure?: string;
+  return?: string;
+  travellers?: number;
+  cabin?: string;
+};
+
+export type FlightResult = {
+  airline: string;
+  price: number;
+  duration: string;
+  stops: string;
+  dep: string;
+};
 
 export type Booking = {
   id: number;
@@ -123,8 +138,10 @@ export function mapBookingsForAI(bookings: Booking[]): AIInputBooking[] {
 /* ==============================
    SEARCH FLIGHTS
 ============================== */
-export async function searchFlights(data: any) {
-  const res = await apiClient.post("/api/flights/search", data);
+export async function searchFlights(params: any) {
+  const res = await apiClient.get("/api/flights/search", {
+    params
+  });
   return res.data;
 }
 

@@ -9,7 +9,6 @@ export default function PaymentPage() {
 
   const [loading, setLoading] = useState(false);
 
-  
   const bookingId = params.get("bookingId");
 
   if (!bookingId) {
@@ -23,28 +22,85 @@ export default function PaymentPage() {
   async function handlePayment() {
     try {
       setLoading(true);
-  
-      const res = await fetch("http://localhost:5000/api/payment/verify", {
+
+      // 1️⃣ CREATE ORDER
+      const orderRes = await fetch("http://localhost:5000/api/payment/order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           bookingId: Number(bookingId),
-          paymentStatus: "SUCCESS", 
         }),
       });
-  
-      const data = await res.json();
-  
-      if (!res.ok) {
-        alert(data.message || "Payment failed");
+
+      const orderData = await orderRes.json();
+
+      if (!orderData.success) {
+        alert(orderData.message || "Failed to create order");
         return;
       }
-  
-      /* ✅ SUCCESS → GO TO TICKET */
-      router.push(`/ticket?bookingId=${bookingId}`);
-  
+
+      const order = orderData.order;
+
+      // 2️⃣ RAZORPAY OPTIONS
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: "INR",
+        name: "JetlyXO",
+        description: "Booking Payment",
+        order_id: order.id,
+
+        handler: async function (response: any) {
+          try {
+            // 3️⃣ VERIFY PAYMENT
+            const verifyRes = await fetch(
+              "http://localhost:5000/api/payment/verify",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  bookingId: Number(bookingId),
+                }),
+              }
+            );
+
+            const verifyData = await verifyRes.json();
+
+            if (!verifyRes.ok || !verifyData.success) {
+              alert(verifyData.message || "Payment verification failed");
+              return;
+            }
+
+            // ✅ SUCCESS → GO TO TICKET
+            router.push(`/ticket?bookingId=${bookingId}`);
+
+          } catch (err) {
+            console.error("VERIFY ERROR:", err);
+            alert("Payment verification failed");
+          }
+        },
+
+        prefill: {
+          name: "Jetly User",
+          email: "test@gmail.com",
+        },
+
+        theme: {
+          color: "#2563eb",
+        },
+      };
+
+      // 4️⃣ OPEN RAZORPAY
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+
     } catch (err) {
       console.error("PAYMENT ERROR:", err);
       alert("Payment failed");
@@ -61,18 +117,17 @@ export default function PaymentPage() {
           💳 JetlyXO Payment
         </h1>
 
-        {/*  Minimal UI now */}
         <p className="text-center text-sm text-gray-300">
-          Processing booking ID: <span className="font-bold">{bookingId}</span>
+          Booking ID: <span className="font-bold">{bookingId}</span>
         </p>
 
         <button
-  onClick={handlePayment}
-  disabled={loading}
-  className="bg-green-600 w-full py-2 mt-6 rounded-lg disabled:opacity-50"
->
-  {loading ? "Processing..." : "Pay Now"}
-</button>
+          onClick={handlePayment}
+          disabled={loading}
+          className="bg-green-600 w-full py-2 mt-6 rounded-lg disabled:opacity-50"
+        >
+          {loading ? "Processing..." : "Pay Now"}
+        </button>
 
       </div>
     </div>

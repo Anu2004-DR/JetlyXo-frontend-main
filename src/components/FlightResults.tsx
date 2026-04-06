@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import type { FlightResult } from "@/lib/api";
 
 const SORT_OPTIONS = [
   "Cheapest",
@@ -15,7 +14,7 @@ const SORT_OPTIONS = [
 
 /* -------- NORMALIZE FLIGHT DATA -------- */
 
-function normalizeFlight(f: FlightResult, index: number) {
+function normalizeFlight(f: any, index: number) {
   return {
     id: typeof f?.id === "number" ? f.id : index + 1,
     airline: f?.airline ?? "Unknown Airline",
@@ -57,37 +56,29 @@ function BookNowButton({
       alert("Flight ID missing");
       return;
     }
-  
+
     const token = localStorage.getItem("jetly_token");
-  
-    const bookingData = {
-      action: "flightPassenger",
-      data: {
-        flightId,
-        priceNumber,
-        airline,
-        duration,
-      },
-    };
-  
-    // ❌ NOT LOGGED IN
+
     if (!token) {
       localStorage.setItem(
         "redirectAfterLogin",
-        JSON.stringify(bookingData)
+        JSON.stringify({
+          action: "flightPassenger",
+          data: { flightId, priceNumber, airline, duration },
+        })
       );
-  
+
       router.push("/login");
       return;
     }
-  
-    // ✅ LOGGED IN → CONTINUE
+
     router.push(
       `/flight-passenger?flightId=${flightId}&price=${priceNumber}&airline=${encodeURIComponent(
         airline
       )}&duration=${encodeURIComponent(duration)}`
     );
   };
+
   return (
     <button
       onClick={handleClick}
@@ -101,7 +92,7 @@ function BookNowButton({
 /* -------- MAIN COMPONENT -------- */
 
 type FlightResultsProps = {
-  flights: FlightResult[];
+  flights: any[];
   from?: string;
   to?: string;
 };
@@ -114,9 +105,9 @@ export default function FlightResults({
   const [sortBy, setSortBy] =
     useState<(typeof SORT_OPTIONS)[number]>("Cheapest");
 
-  const [flightList, setFlightList] = useState(flights);
+  const [flightList, setFlightList] = useState<any[]>(flights);
 
-  /* ✅ sync props */
+  /* sync props */
   useEffect(() => {
     setFlightList(flights);
   }, [flights]);
@@ -222,12 +213,7 @@ export default function FlightResults({
               <p className="text-sm text-white/50">
                 {flight.seats === 0
                   ? "Sold Out ❌"
-                  : `Seats Avail
-                  
-                  
-                  
-                  
-                  able: ${flight.seats}`}
+                  : `Seats Available: ${flight.seats}`}
               </p>
             </div>
 

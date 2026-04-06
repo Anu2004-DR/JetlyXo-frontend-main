@@ -2,6 +2,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { createBooking } from "@/lib/api"; 
 
 export default function BusPassengerPage() {
   const params = useSearchParams();
@@ -23,50 +24,49 @@ export default function BusPassengerPage() {
 
   /* -------- CONTINUE -------- */
 
-  async function handleContinue() {
-    if (!busId) {
-      alert("Bus info missing");
-      return;
-    }
   
-    if (!name || !age || !phone || !email) {
-      alert("Please fill all details");
-      return;
-    }
-  
-    try {
-      const res = await fetch("http://localhost:5000/api/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          bookingType: "BUS",
-          busId: Number(busId),
-          passengerName: name,
-          passengerAge: Number(age),
-          passengerPhone: phone,
-          passengerEmail: email,
-          totalPrice: Number(price),
-        }),
-      });
-  
-      const data = await res.json();
-  
-      if (!res.ok) {
-        alert(data.message);
-        return;
-      }
-  
-      const bookingId = data?.data?.id;
-  
-      router.push(`/payment?bookingId=${bookingId}`);
-  
-    } catch (err) {
-      alert("Error creating booking");
-    }
+
+async function handleContinue() {
+  if (!busId) {
+    alert("Bus info missing");
+    return;
   }
 
+  if (!name || !age || !phone || !email) {
+    alert("Please fill all details");
+    return;
+  }
+
+  try {
+
+    const payload = {
+      bookingType: "BUS",
+      entityId: Number(busId), // ✅ FIXED
+
+      passengerName: name,
+      passengerAge: Number(age),
+      passengerPhone: phone,
+      passengerEmail: email
+    };
+
+    console.log("BOOKING PAYLOAD:", payload); // 🔍 debug
+
+    const res = await createBooking(payload);
+
+    const bookingId = res?.booking?.id; // ✅ FIXED
+
+    if (!bookingId) {
+      alert("Booking failed");
+      return;
+    }
+
+    router.push(`/payment?bookingId=${bookingId}`);
+
+  } catch (err: any) {
+    console.error(err);
+    alert(err?.message || "Error creating booking");
+  }
+}
   /* -------- UI -------- */
 
   return (

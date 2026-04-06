@@ -25,7 +25,7 @@ import {
   searchFlights,
   fetchBuses,
   fetchTrains,
-  type FlightResult
+  
 } from "@/lib/api";
 
 export default function Home() {
@@ -33,10 +33,9 @@ export default function Home() {
   const router = useRouter();
 
   const resultsRef = useRef<HTMLDivElement>(null);
+  const [flightResults, setFlightResults] = useState<any[] | null>(null);
 
-  
 
-  const [flightResults, setFlightResults] = useState<FlightResult[] | null>(null);
   const [busResults, setBusResults] = useState<Bus[] | null>(null);
   const [trainResults, setTrainResults] = useState<Train[] | null>(null);
 
@@ -91,7 +90,7 @@ const [openChat, setOpenChat] = useState(false);
     try {
       const results = await searchFlights({});
   
-      const formatted: FlightResult[] = results.map((flight: any) => ({
+      const formatted = results.map((flight: any) => ({
         ...flight,
         id: Number(flight.id),
   

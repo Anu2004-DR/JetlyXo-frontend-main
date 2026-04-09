@@ -150,7 +150,7 @@ export default function SearchWidget({
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-2">
+          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-2">
 
             <input
               placeholder="From"

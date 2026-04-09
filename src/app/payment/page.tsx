@@ -18,118 +18,120 @@ export default function PaymentPage() {
       </div>
     );
   }
+  
+  function loadRazorpay(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
 
   async function handlePayment() {
     try {
       setLoading(true);
-
-      // 1️⃣ CREATE ORDER
-      const orderRes = await fetch("http://localhost:5000/api/payment/order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          bookingId: Number(bookingId),
-        }),
-      });
-
+  
+      const isLoaded = await loadRazorpay();
+if (!isLoaded) {
+  alert("Razorpay SDK failed to load");
+  return;
+}
+  
+      const orderRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/payment/create-order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+          body: JSON.stringify({
+            bookingId: Number(bookingId),
+          }),
+        }
+      );
+  
       const orderData = await orderRes.json();
-
-      if (!orderData.success) {
-        alert(orderData.message || "Failed to create order");
-        return;
-      }
-
-      const order = orderData.order;
-
-      // 2️⃣ RAZORPAY OPTIONS
+  
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: order.amount,
+        amount: orderData.order.amount,
         currency: "INR",
         name: "JetlyXO",
-        description: "Booking Payment",
-        order_id: order.id,
-
-        handler: async function (response: any) {
-          try {
-            // 3️⃣ VERIFY PAYMENT
-            const verifyRes = await fetch(
-              "http://localhost:5000/api/payment/verify",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  bookingId: Number(bookingId),
-                }),
-              }
-            );
-
-            const verifyData = await verifyRes.json();
-
-            if (!verifyRes.ok || !verifyData.success) {
-              alert(verifyData.message || "Payment verification failed");
-              return;
+        order_id: orderData.order.id,
+  
+        handler: async (response: any) => {
+          const verifyRes = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/payment/verify`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+              },
+              body: JSON.stringify({
+                ...response,
+                bookingId: Number(bookingId)
+              })
             }
-
-            // ✅ SUCCESS → GO TO TICKET
+          );
+  
+          const verifyData = await verifyRes.json();
+  
+          if (verifyData.success) {
             router.push(`/ticket?bookingId=${bookingId}`);
-
-          } catch (err) {
-            console.error("VERIFY ERROR:", err);
+          } else {
             alert("Payment verification failed");
           }
         },
-
-        prefill: {
-          name: "Jetly User",
-          email: "test@gmail.com",
-        },
-
-        theme: {
-          color: "#2563eb",
-        },
+  
+        modal: {
+          ondismiss: () => alert("Payment cancelled")
+        }
       };
-
-      // 4️⃣ OPEN RAZORPAY
+  
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
-
+  
     } catch (err) {
-      console.error("PAYMENT ERROR:", err);
+      console.error(err);
       alert("Payment failed");
     } finally {
       setLoading(false);
     }
   }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl shadow-2xl w-[400px]">
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
 
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          💳 JetlyXO Payment
-        </h1>
+  <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md">
 
-        <p className="text-center text-sm text-gray-300">
-          Booking ID: <span className="font-bold">{bookingId}</span>
-        </p>
+    <h1 className="text-xl sm:text-2xl font-bold mb-6 text-center">
+      💳 JetlyXO Payment
+    </h1>
 
-        <button
-          onClick={handlePayment}
-          disabled={loading}
-          className="bg-green-600 w-full py-2 mt-6 rounded-lg disabled:opacity-50"
-        >
-          {loading ? "Processing..." : "Pay Now"}
-        </button>
+    <p className="text-xs sm:text-sm text-gray-300 text-center">
+      Booking ID: <span className="font-bold">{bookingId}</span>
+    </p>
 
-      </div>
-    </div>
+    <button
+      onClick={handlePayment}
+      disabled={loading}
+      className="w-full sm:w-auto bg-green-600 py-3 px-6 mt-6 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
+    >
+      {loading ? (
+        <span className="flex items-center justify-center gap-2">
+          <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+          Processing...
+        </span>
+      ) : (
+        "Pay Now"
+      )}
+    </button>
+
+  </div>
+
+</div>
   );
 }

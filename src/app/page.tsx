@@ -21,12 +21,8 @@ import type { Bus } from "@/types/bus";
 import type { Train } from "@/types/train";
 import { useRouter } from "next/navigation";
 
-import {
-  searchFlights,
-  fetchBuses,
-  fetchTrains,
-  
-} from "@/lib/api";
+
+import { searchFlights,searchBuses, searchTrains } from "@/lib/api";
 
 export default function Home() {
   
@@ -136,7 +132,10 @@ const [openChat, setOpenChat] = useState(false);
     setLoadingService("buses");
 
     try {
-      const results = await fetchBuses();
+      const results = await searchBuses({
+        from: "BLR",
+        to: "HYD"
+      });
 
       const formatted: Bus[] = results.map((bus: any) => ({
         id: Number(bus.id),
@@ -184,7 +183,10 @@ const [openChat, setOpenChat] = useState(false);
     setLoadingService("trains");
 
     try {
-      const results = await fetchTrains();
+      const results = await searchTrains({
+        from: "BLR",
+        to: "MAA"
+      });
 
       const formatted: Train[] = results.map((train: any) => ({
         id: Number(train.id),
@@ -220,7 +222,7 @@ const [openChat, setOpenChat] = useState(false);
       <Hero />
 
       {showOffer && (
-  <div className="fixed left-5 top-32 bg-white text-black p-4 rounded-xl shadow-lg w-[250px] z-40">
+   <div className="fixed left-3 right-3 sm:left-5 sm:right-auto top-24 bg-white text-black p-4 rounded-xl shadow-lg w-auto sm:w-[250px] z-40">
 
     <button
       onClick={() => setShowOffer(false)}
@@ -251,18 +253,63 @@ const [openChat, setOpenChat] = useState(false);
         onTrainsClick={handleTrainsClick}
       />
 
-      <SearchWidget
-        onFlightResults={(results) => {
-          setFlightResults(dedupe(results));
-          setBusResults(null);
-          setTrainResults(null);
-        }}
-        onScrollToResults={scrollToResults}
+<div className="max-w-5xl mx-auto px-4">
+
+<div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-2xl shadow-xl">
+
+  {/* Tabs */}
+  <div className="flex gap-3 mb-6">
+    <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">One Way</button>
+    <button className="bg-white/10 text-gray-300 px-4 py-2 rounded-lg">Round Trip</button>
+    <button className="bg-white/10 text-gray-300 px-4 py-2 rounded-lg">Multi City</button>
+  </div>
+
+  {/* Form Grid */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    {/* FROM */}
+    <div>
+      <label className="text-sm text-gray-400">From</label>
+      <input
+        type="text"
+        placeholder="City or Airport"
+        className="w-full mt-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-blue-500 outline-none"
       />
+    </div>
+
+    {/* TO */}
+    <div>
+      <label className="text-sm text-gray-400">To</label>
+      <input
+        type="text"
+        placeholder="Destination"
+        className="w-full mt-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-blue-500 outline-none"
+      />
+    </div>
+
+    {/* DATE */}
+    <div>
+      <label className="text-sm text-gray-400">Departure</label>
+      <input
+        type="date"
+        className="w-full mt-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-blue-500 outline-none"
+      />
+    </div>
+
+  </div>
+
+  {/* BUTTON */}
+  <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold">
+    Search Flights
+  </button>
+
+</div>
+
+</div>
 
       <section
         ref={resultsRef}
-        className="py-8 px-4 container mx-auto max-w-4xl"
+        className="py-8 px-3 sm:px-4 container mx-auto max-w-4xl"
       >
 
         {loadingService && (
@@ -294,7 +341,7 @@ const [openChat, setOpenChat] = useState(false);
       {showLoginModal && (
   <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     
-    <div className="bg-white text-black rounded-xl p-6 w-[350px] relative">
+    <div className="bg-white text-black rounded-xl p-6 w-full max-w-sm mx-4">
 
       {/* Close button */}
       <button
@@ -313,20 +360,21 @@ const [openChat, setOpenChat] = useState(false);
         className="w-full border p-2 rounded mb-3"
       />
 
-      <button className="w-full bg-blue-600 text-white p-2 rounded">
+<button className="w-full sm:w-auto bg-blue-600 py-3 px-6 rounded-lg">
         Continue
       </button>
 
       <p className="text-xs text-gray-500 mt-3">
         By continuing, you agree to Jetly Terms
       </p>
-
+         
+      <button className="absolute center">⇄</button>
     </div>
   </div>
 )}
 
 {showBot && (
-  <div className="fixed bottom-24 right-6 z-50">
+  <div className="fixed bottom-20 right-4 sm:right-6 z-50">
 
     {/* Robot */}
     <div

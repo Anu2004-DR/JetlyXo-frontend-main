@@ -1,7 +1,4 @@
 import apiClient from "@/lib/apiClient";
-
-
-
 export type FlightSearchParams = {
   from?: string;
   to?: string;
@@ -32,53 +29,138 @@ export type Booking = {
   train?: any;
 };
 
-/* ==============================
-   CREATE BOOKING
-============================== */
 export async function createBooking(data: any) {
-  const res = await apiClient.post("/api/bookings", data);
-  return res.data;
+  try {
+    const res = await apiClient.post("/api/bookings", data);
+    return res.data;
+  } catch (err: any) {
+    console.error("CREATE BOOKING ERROR:", err?.response?.data || err.message);
+    throw err;
+  }
 }
 
-/* ==============================
-   GET BOOKING HISTORY
-============================== */
+
 export async function fetchBookings(): Promise<Booking[]> {
-  const res = await apiClient.get("/api/bookings/history");
+  try {
+    const res = await apiClient.get("/api/bookings/history");
 
-  console.log("FULL RESPONSE:", res.data);
+    console.log("BOOKINGS RESPONSE:", res.data);
 
-  return res.data?.data || [];
+    // Handle both formats safely
+    return res.data?.data || res.data || [];
+  } catch (err: any) {
+    console.error("FETCH BOOKINGS ERROR:", err?.response?.data || err.message);
+    return [];
+  }
 }
 
-  
-/* ==============================
-   GET BOOKING BY ID (FIXED)
-============================== */
+
 export async function getBookingById(id: number) {
-  const res = await apiClient.get(`/api/bookings/${id}`);
-  return res.data;
+  try {
+    const res = await apiClient.get(`/api/bookings/${id}`);
+    return res.data;
+  } catch (err: any) {
+    console.error("GET BOOKING ERROR:", err?.response?.data || err.message);
+    throw err;
+  }
 }
 
-/* ==============================
-   CANCEL BOOKING
-============================== */
+
 export async function cancelBooking(id: string) {
-  const res = await apiClient.post(`/api/bookings/cancel/${id}`);
-  return res.data;
+  try {
+    const res = await apiClient.post(`/api/bookings/cancel/${id}`);
+    return res.data;
+  } catch (err: any) {
+    console.error("CANCEL ERROR:", err?.response?.data || err.message);
+    throw err;
+  }
 }
 
-/* ==============================
-   RECOMMENDATIONS
-============================== */
+
+export async function searchFlights(params: FlightSearchParams) {
+  try {
+    if (!params.from || !params.to) {
+      throw new Error("From and To are required");
+    }
+
+    const res = await apiClient.get("/api/flights/search", {
+      params: {
+        from: params.from,
+        to: params.to,
+        travellers: params.travellers || 1,
+        cabin: params.cabin || "economy"
+      }
+    });
+
+    return res.data;
+  } catch (err: any) {
+    console.error("FLIGHT SEARCH ERROR:", err?.response?.data || err.message);
+    return [];
+  }
+}
+
+
+export async function searchBuses(params: { from?: string; to?: string }) {
+  try {
+    if (!params.from || !params.to) {
+      throw new Error("From and To required");
+    }
+
+    const res = await apiClient.get("/api/buses/search", {
+      params: {
+        from: params.from,
+        to: params.to
+      }
+    });
+
+    return res.data;
+  } catch (err: any) {
+    console.error("BUS SEARCH ERROR:", err?.response?.data || err.message);
+    return [];
+  }
+}
+
+
+export async function searchTrains(params: { from?: string; to?: string }) {
+  try {
+    if (!params.from || !params.to) {
+      throw new Error("From and To required");
+    }
+
+    const res = await apiClient.get("/api/trains/search", {
+      params: {
+        from: params.from,
+        to: params.to
+      }
+    });
+
+    return res.data;
+  } catch (err: any) {
+    console.error("TRAIN SEARCH ERROR:", err?.response?.data || err.message);
+    return [];
+  }
+}
+
 export async function fetchRecommendations(bookings: any[]) {
-  const res = await apiClient.post("/api/recommendations", { bookings });
+  try {
+    const res = await apiClient.post("/api/recommendations", { bookings });
+    return res.data;
+  } catch (err: any) {
+    console.error("RECOMMENDATION ERROR:", err?.response?.data || err.message);
+    return [];
+  }
+}
+
+export async function createOrder(amount: number) {
+  const res = await apiClient.post("/api/payment/create-order", { amount });
   return res.data;
 }
 
-/* ==============================
-   RECOMMENDATION TYPES
-============================== */
+export async function verifyPayment(data: any) {
+  const res = await apiClient.post("/api/payment/verify", data);
+  return res.data;
+}
+
 export type Recommendation = {
   id: string;
   type: "flight" | "bus" | "train";
@@ -90,9 +172,6 @@ export type Recommendation = {
   reason?: string;
 };
 
-/* ==============================
-   MAP BOOKINGS FOR AI
-============================== */
 export type AIInputBooking = {
   source: string;
   destination: string;
@@ -134,29 +213,4 @@ export function mapBookingsForAI(bookings: Booking[]): AIInputBooking[] {
       return null;
     })
     .filter((b): b is AIInputBooking => b !== null);
-}
-/* ==============================
-   SEARCH FLIGHTS
-============================== */
-export async function searchFlights(params: any) {
-  const res = await apiClient.get("/api/flights/search", {
-    params
-  });
-  return res.data;
-}
-
-/* ==============================
-   FETCH BUSES
-============================== */
-export async function fetchBuses() {
-  const res = await apiClient.get("/api/buses");
-  return res.data;
-}
-
-/* ==============================
-   FETCH TRAINS
-============================== */
-export async function fetchTrains() {
-  const res = await apiClient.get("/api/trains");
-  return res.data;
 }

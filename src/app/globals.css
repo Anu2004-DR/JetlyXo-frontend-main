@@ -19,6 +19,10 @@ body {
   @apply text-white antialiased;
   background-color: var(--navy-primary);
   font-feature-settings: "rlig" 1, "calt" 1;
+
+    font-family: system-ui, -apple-system, sans-serif;
+  
+  
 }
 
 /* Glassmorphism base */

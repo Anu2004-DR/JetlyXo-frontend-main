@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   searchFlights,
@@ -16,7 +16,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "multi-city", label: "Multi City" },
 ];
 
-/* ✅ FIXED (Next.js requirement) */
 type SearchWidgetProps = {
   onFlightResultsAction: (results: FlightResult[]) => void;
   onScrollToResultsAction?: () => void;
@@ -37,13 +36,45 @@ export default function SearchWidget({
   const [travellers, setTravellers] = useState(1);
   const [cabin, setCabin] = useState("economy");
 
+  /* 🔥 AUTO LOCATION ON LOAD */
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          );
+
+          const data = await res.json();
+
+          const city =
+            data.address?.city ||
+            data.address?.town ||
+            data.address?.village ||
+            data.address?.state;
+
+          if (city) setFrom(city);
+        } catch (err) {
+          console.log("Location fetch failed");
+        }
+      },
+      () => {
+        console.log("User denied location");
+      }
+    );
+  }, []);
+
+  /* 🔍 SEARCH */
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      /* 🔥 TRACK SEARCH */
       await fetch("http://localhost:5000/api/behavior/track", {
         method: "POST",
         headers: {
@@ -56,7 +87,6 @@ export default function SearchWidget({
         }),
       });
 
-      /* ✅ FIXED PARAMS */
       const params: FlightSearchParams = {
         from: from || undefined,
         to: to || undefined,
@@ -69,7 +99,6 @@ export default function SearchWidget({
 
       let results = await searchFlights(params);
 
-      /* ✅ FALLBACK DATA */
       if (!results || results.length === 0) {
         results = [
           {
@@ -79,31 +108,16 @@ export default function SearchWidget({
             stops: "1 stop",
             dep: "06:30",
           },
-          {
-            airline: "Vistara",
-            price: 7200,
-            duration: "2h 45m",
-            stops: "Direct",
-            dep: "08:10",
-          },
-          {
-            airline: "Air India",
-            price: 6450,
-            duration: "3h 10m",
-            stops: "Direct",
-            dep: "10:15",
-          },
         ];
       }
 
-      /* ✅ FIXED FUNCTION */
       onFlightResultsAction(results);
       onScrollToResultsAction?.();
 
     } catch (err) {
       console.error(err);
 
-      const demoFlights: FlightResult[] = [
+      onFlightResultsAction([
         {
           airline: "IndiGo",
           price: 5980,
@@ -111,15 +125,33 @@ export default function SearchWidget({
           stops: "1 stop",
           dep: "06:30",
         },
-      ];
+      ]);
 
-      onFlightResultsAction(demoFlights);
       onScrollToResultsAction?.();
-
       setError(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  /* 📍 MANUAL LOCATION BUTTON */
+  const handleUseLocation = () => {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+      );
+
+      const data = await res.json();
+
+      const city =
+        data.address?.city ||
+        data.address?.town ||
+        data.address?.state;
+
+      if (city) setFrom(city);
+    });
   };
 
   return (
@@ -129,8 +161,8 @@ export default function SearchWidget({
           className="glass-card p-6 md:p-8"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
         >
+
           {/* Tabs */}
           <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
             {TABS.map((tab) => (
@@ -140,8 +172,8 @@ export default function SearchWidget({
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-2.5 rounded-xl font-medium ${
                   activeTab === tab.id
-                    ? "bg-jetly-accent text-white"
-                    : "bg-white/5 text-white/70"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white/10 text-white/70"
                 }`}
               >
                 {tab.label}
@@ -149,68 +181,139 @@ export default function SearchWidget({
             ))}
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-2">
+          {/* FORM */}
+          <form
+  onSubmit={handleSearch}
+  className="grid grid-cols-1 md:grid-cols-2 gap-5"
+>
 
-            <input
-              placeholder="From"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="input"
-            />
+  {/* FROM + TO GROUP */}
+  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 relative">
 
-            <input
-              placeholder="To"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="input"
-            />
+    {/* FROM */}
+    <div className="relative">
+      <label className="text-xs text-gray-400">From</label>
 
-            <input
-              type="date"
-              value={departure}
-              onChange={(e) => setDeparture(e.target.value)}
-              className="input"
-            />
+      <div className="relative">
+        <span className="absolute left-3 top-3 text-gray-400">📍</span>
 
-            {activeTab !== "one-way" && (
-              <input
-                type="date"
-                value={returnDate}
-                onChange={(e) => setReturnDate(e.target.value)}
-                className="input"
-              />
-            )}
+        <input
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          placeholder="Enter departure city"
+          className="input pl-10 pr-10 h-14 text-sm md:text-base focus:ring-2 focus:ring-blue-500"
+        />
 
-            <select
-              value={travellers}
-              onChange={(e) => setTravellers(Number(e.target.value))}
-              className="input"
-            >
-              {[1, 2, 3, 4].map((n) => (
-                <option key={n}>{n}</option>
-              ))}
-            </select>
-
-            <select
-              value={cabin}
-              onChange={(e) => setCabin(e.target.value)}
-              className="input"
-            >
-              <option value="economy">Economy</option>
-              <option value="business">Business</option>
-            </select>
-
-          </form>
-
-          {/* Button */}
+        {from && (
           <button
-            onClick={handleSearch}
-            disabled={loading}
-            className="w-full mt-6 bg-blue-600 py-3 rounded"
+            type="button"
+            onClick={() => setFrom("")}
+            className="absolute right-3 top-3 text-gray-400"
           >
-            {loading ? "Searching..." : "Search Flights"}
+            ✕
           </button>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={handleUseLocation}
+        className="text-xs text-blue-400 mt-1"
+      >
+        📍 Use current location
+      </button>
+    </div>
+
+    {/* TO */}
+    <div className="relative">
+      <label className="text-xs text-gray-400">To</label>
+
+      <div className="relative">
+        <span className="absolute left-3 top-3 text-gray-400">✈️</span>
+
+        <input
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          placeholder="Enter destination"
+          className="input pl-10 h-14 text-sm md:text-base focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </div>
+
+    {/* SWAP BUTTON */}
+    <button
+      type="button"
+      onClick={() => {
+        const temp = from;
+        setFrom(to);
+        setTo(temp);
+      }}
+      className="absolute left-1/2 top-7 -translate-x-1/2 bg-white text-black shadow-md rounded-full p-2 hover:scale-110 transition"
+    >
+      🔄
+    </button>
+  </div>
+
+  {/* DATES */}
+  <div className="relative">
+    <label className="text-xs text-gray-400">Departure</label>
+    <input
+      type="date"
+      value={departure}
+      onChange={(e) => setDeparture(e.target.value)}
+      className="input h-14 text-sm md:text-base"
+    />
+  </div>
+
+  {activeTab !== "one-way" && (
+    <div className="relative">
+      <label className="text-xs text-gray-400">Return</label>
+      <input
+        type="date"
+        value={returnDate}
+        onChange={(e) => setReturnDate(e.target.value)}
+        className="input h-14 text-sm md:text-base"
+      />
+    </div>
+  )}
+
+  {/* TRAVELLERS */}
+  <div className="relative">
+    <label className="text-xs text-gray-400">Travellers</label>
+    <select
+      value={travellers}
+      onChange={(e) => setTravellers(Number(e.target.value))}
+      className="input h-14 text-sm md:text-base"
+    >
+      {[1, 2, 3, 4].map((n) => (
+        <option key={n}>{n} Traveller</option>
+      ))}
+    </select>
+  </div>
+
+  {/* CABIN */}
+  <div className="relative">
+    <label className="text-xs text-gray-400">Cabin</label>
+    <select
+      value={cabin}
+      onChange={(e) => setCabin(e.target.value)}
+      className="input h-14 text-sm md:text-base"
+    >
+      <option value="economy">Economy</option>
+      <option value="business">Business</option>
+    </select>
+  </div>
+
+</form>
+
+          {/* BUTTON */}
+          <button
+  onClick={handleSearch}
+  disabled={loading}
+  className="w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 py-4 rounded-xl text-white font-semibold text-base hover:opacity-90 transition shadow-lg"
+>
+  {loading ? "Searching..." : "Search Flights ✈️"}
+</button>
 
           {error && <p className="text-red-400 mt-3">{error}</p>}
         </motion.div>

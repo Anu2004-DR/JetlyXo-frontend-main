@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getToken, logout } from "./auth";
 
 const apiClient = axios.create({
   baseURL: "http://localhost:5000",
@@ -7,23 +8,42 @@ const apiClient = axios.create({
   },
 });
 
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+/* =========================
+   REQUEST INTERCEPTOR
+========================= */
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = getToken();
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+    console.log("TOKEN:", token); // debug
 
-  return config;
-});
-
-apiClient.interceptors.response.use(
-  (res) => res,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+/* =========================
+   RESPONSE INTERCEPTOR
+========================= */
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+
+    if (status === 401) {
+      console.warn("Unauthorized - token invalid or expired");
+
+      // Only logout if token exists
+      const token = getToken();
+      if (token) {
+        logout();
+      }
+    }
+
     return Promise.reject(error);
   }
 );

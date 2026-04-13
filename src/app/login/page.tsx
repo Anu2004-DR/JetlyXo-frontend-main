@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { loginUser } from "@/lib/auth";
 
+import { setToken } from "@/lib/auth";
 
 
 export default function LoginPage() {
@@ -63,19 +63,7 @@ const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
   };
 
 
-  const handleLogin = async () => {
-    try {
-      const res = await loginUser(email, password);
   
-      console.log("Login success:", res);
-  
-      // redirect after login
-      window.location.href = "/dashboard";
-  
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     if (e.key === "Backspace" && !otpArray[index] && index > 0) {
       const prev = document.getElementById(`otp-${index - 1}`);
@@ -97,14 +85,17 @@ const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
   };
 
   /* ================= VERIFY OTP ================= */
-  const verifyOTP = async () => {
-    const finalOtp = otpArray.join("");
   
-    if (finalOtp.length !== 6) {
-      alert("Enter valid OTP");
-      return;
-    }
-  
+
+const verifyOTP = async () => {
+  const finalOtp = otpArray.join("");
+
+  if (finalOtp.length !== 6) {
+    alert("Enter valid OTP");
+    return;
+  }
+
+  try {
     const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
       method: "POST",
       headers: {
@@ -112,19 +103,30 @@ const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
       },
       body: JSON.stringify({ email, otp: finalOtp })
     });
-  
+
     const data = await res.json();
-  
+
+    console.log("OTP RESPONSE:", data); // 🔍 DEBUG
+
     if (!res.ok) {
       alert(data.message);
       return;
     }
-  
-    // 🔥 FIXED LINE
-    localStorage.setItem("token", data.token);
-  
-    router.push("/");
-  };
+
+    if (!data.token || typeof data.token !== "string") {
+      alert("Invalid token from server");
+      return;
+    }
+
+    setToken(data.token); // ✅ SAFE STORE
+
+    router.push("/"); // ✅ no reload
+
+  } catch (err) {
+    console.error(err);
+    alert("OTP verification failed");
+  }
+};
 
   useEffect(() => {
     if (timer <= 0) {

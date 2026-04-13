@@ -2,6 +2,9 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import apiClient from "@/lib/apiClient";
+import api from "@/lib/axios";
+
 
 export default function PaymentPage() {
   const params = useSearchParams();
@@ -33,50 +36,56 @@ export default function PaymentPage() {
     try {
       setLoading(true);
   
-      const isLoaded = await loadRazorpay();
-if (!isLoaded) {
-  alert("Razorpay SDK failed to load");
-  return;
-}
+      const token = localStorage.getItem("jetly_token"); // ✅ FIXED
   
-      const orderRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/payment/create-order`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          },
-          body: JSON.stringify({
-            bookingId: Number(bookingId),
-          }),
-        }
-      );
+      if (!token) {
+        alert("Please login first");
+        return;
+      }
+  
+      // ❌ REMOVE loadRazorpay() if already in layout
+  
+      // 1. CREATE ORDER
+      const orderRes = await fetch("http://localhost:5000/api/payment/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ IMPORTANT
+        },
+        body: JSON.stringify({ bookingId }),
+      });
   
       const orderData = await orderRes.json();
   
+      console.log("ORDER:", orderData);
+  
+      if (!orderData.id) {
+        alert("Invalid order response");
+        return;
+      }
+  
+      // 2. OPEN RAZORPAY
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.order.amount,
+        amount: orderData.amount,
         currency: "INR",
         name: "JetlyXO",
-        order_id: orderData.order.id,
+        description: "Booking Payment",
+        order_id: orderData.id,
   
-        handler: async (response: any) => {
-          const verifyRes = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/payment/verify`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`
-              },
-              body: JSON.stringify({
-                ...response,
-                bookingId: Number(bookingId)
-              })
-            }
-          );
+        handler: async function (response: any) {
+          // 3. VERIFY PAYMENT
+          const verifyRes = await fetch("http://localhost:5000/api/payment/verify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              ...response,
+              bookingId,
+            }),
+          });
   
           const verifyData = await verifyRes.json();
   
@@ -88,16 +97,20 @@ if (!isLoaded) {
         },
   
         modal: {
-          ondismiss: () => alert("Payment cancelled")
-        }
+          ondismiss: () => alert("Payment cancelled"),
+        },
+  
+        theme: {
+          color: "#16a34a",
+        },
       };
   
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
   
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Payment failed");
+      alert(err.message || "Payment failed");
     } finally {
       setLoading(false);
     }

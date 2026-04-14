@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getToken, logout } from "./auth";
+import { getToken } from "./auth";
 
 const apiClient = axios.create({
   baseURL: "http://localhost:5000",
@@ -14,8 +14,6 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     const token = getToken();
-
-    console.log("TOKEN:", token); // debug
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -35,15 +33,11 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
-      console.warn("Unauthorized - token invalid or expired");
-
-      // Only logout if token exists
-      const token = getToken();
-      if (token) {
-        logout();
-      }
+      console.warn("Unauthorized request");
+     
     }
 
+   
     return Promise.reject(error);
   }
 );

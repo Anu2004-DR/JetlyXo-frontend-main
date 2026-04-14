@@ -15,6 +15,7 @@ import Trust from "@/components/Trust";
 import Footer from "@/components/Footer";
 import AIAssistant from "@/components/AIAssistant";
 import FlightAnimation from "@/components/FlightAnimation";
+import { getToken } from "@/lib/auth";
 
 
 import type { Bus } from "@/types/bus";
@@ -68,8 +69,8 @@ const [openChat, setOpenChat] = useState(false);
 
     
     // ✅ AUTH CHECK (TOP)
-    const token = localStorage.getItem("jetly_token");
-  
+    //const token = localStorage.getItem("jetly_token");
+    const token = getToken();
     if (!token) {
       localStorage.setItem("redirectAfterLogin", "/");
       router.push("/login");
@@ -117,8 +118,8 @@ const [openChat, setOpenChat] = useState(false);
      BUSES
   ========================= */
   const handleBusesClick = useCallback(async () => {
-    const token = localStorage.getItem("jetly_token");
-
+    //const token = localStorage.getItem("jetly_token");
+    const token = getToken();
   if (!token) {
     localStorage.setItem("redirectAfterLogin", "/");
     router.push("/login");
@@ -167,8 +168,8 @@ const [openChat, setOpenChat] = useState(false);
   ========================= */
   const handleTrainsClick = useCallback(async () => {
 
-    const token = localStorage.getItem("jetly_token");
-
+    //const token = localStorage.getItem("jetly_token");
+    const token = getToken();
   if (!token) {
     localStorage.setItem("redirectAfterLogin", "/");
     router.push("/login");

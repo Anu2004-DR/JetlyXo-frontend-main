@@ -29,8 +29,8 @@ export default function MyBookingsPage() {
 
   /* 🔐 AUTH + FETCH BOOKINGS */
   useEffect(() => {
-    const token = localStorage.getItem("jetly_token");
-
+    //const token = localStorage.getItem("jetly_token");
+    const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
       return;

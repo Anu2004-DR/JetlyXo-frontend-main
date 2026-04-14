@@ -118,9 +118,11 @@ const verifyOTP = async () => {
       return;
     }
 
-    setToken(data.token); // ✅ SAFE STORE
+    //setToken(data.token); // ✅ SAFE STORE
 
-    router.push("/"); // ✅ no reload
+    //router.push("/"); // ✅ no reload
+    setToken(data.token);
+window.location.href = "/";
 
   } catch (err) {
     console.error(err);

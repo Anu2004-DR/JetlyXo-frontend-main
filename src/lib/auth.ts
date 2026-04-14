@@ -13,11 +13,16 @@ export const isLoggedIn = (): boolean => {
   return !!getToken();
 };
 
-export const logout = () => {
+/*export const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 
   if (typeof window !== "undefined") {
     window.location.href = "/login";
   }
+};*/
+
+export const logout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 };

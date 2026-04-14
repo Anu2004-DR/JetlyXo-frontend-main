@@ -34,11 +34,44 @@ export async function createBooking(data: any) {
     const res = await apiClient.post("/api/bookings", data);
     return res.data;
   } catch (err: any) {
-    console.error("CREATE BOOKING ERROR:", err?.response?.data || err.message);
+    console.error(
+      "CREATE BOOKING ERROR:",
+      err?.response?.data || err.message
+    );
     throw err;
   }
 }
 
+/* PAYMENT CREATE ORDER */
+export async function createOrder(bookingId: number | string) {
+  try {
+    const res = await apiClient.post("/api/payment/create-order", {
+      bookingId,
+    });
+
+    return res.data;
+  } catch (err: any) {
+    console.error(
+      "CREATE ORDER ERROR:",
+      err?.response?.data || err.message
+    );
+    throw err;
+  }
+}
+
+/* PAYMENT VERIFY */
+export async function verifyPayment(data: any) {
+  try {
+    const res = await apiClient.post("/api/payment/verify", data);
+    return res.data;
+  } catch (err: any) {
+    console.error(
+      "VERIFY PAYMENT ERROR:",
+      err?.response?.data || err.message
+    );
+    throw err;
+  }
+}
 
 export async function fetchBookings(): Promise<Booking[]> {
   try {
@@ -151,15 +184,7 @@ export async function fetchRecommendations(bookings: any[]) {
   }
 }
 
-export async function createOrder(amount: number) {
-  const res = await apiClient.post("/api/payment/create-order", { amount });
-  return res.data;
-}
 
-export async function verifyPayment(data: any) {
-  const res = await apiClient.post("/api/payment/verify", data);
-  return res.data;
-}
 
 export type Recommendation = {
   id: string;

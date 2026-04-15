@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -21,9 +21,9 @@ function normalizeFlight(f: any, index: number) {
     priceNumber: typeof f?.price === "number" ? f.price : 0,
     priceDisplay:
       typeof f?.price === "number"
-        ? `₹${f.price.toLocaleString("en-IN")}`
-        : "—",
-    duration: f?.duration ?? "—",
+        ? `â‚¹${f.price.toLocaleString("en-IN")}`
+        : "â€”",
+    duration: f?.duration ?? "â€”",
     stops: f?.stops ?? "Non-stop",
     dep: f?.dep ?? "--:--",
 
@@ -102,6 +102,7 @@ export default function FlightResults({
   from = "Bangalore",
   to = "Delhi",
 }: FlightResultsProps) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   const [sortBy, setSortBy] =
     useState<(typeof SORT_OPTIONS)[number]>("Cheapest");
 
@@ -117,7 +118,7 @@ export default function FlightResults({
   async function refreshFlightSeats() {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/flights/search?from=${from}&to=${to}`
+        `${API_BASE}/api/flights/search?from=${from}&to=${to}`
       );
 
       const data = await res.json();
@@ -203,7 +204,7 @@ export default function FlightResults({
               </p>
 
               <p className="text-sm text-white/60">
-                {flight.duration} • {flight.stops}
+                {flight.duration} â€¢ {flight.stops}
               </p>
 
               <p className="text-sm text-white/50">
@@ -212,7 +213,7 @@ export default function FlightResults({
 
               <p className="text-sm text-white/50">
                 {flight.seats === 0
-                  ? "Sold Out ❌"
+                  ? "Sold Out âŒ"
                   : `Seats Available: ${flight.seats}`}
               </p>
             </div>
@@ -235,3 +236,5 @@ export default function FlightResults({
     </div>
   );
 }
+
+

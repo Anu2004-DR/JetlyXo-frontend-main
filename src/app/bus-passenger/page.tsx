@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { createBooking } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
-export default function BusPassengerPage() {
+function BusPassengerPageContent() {
   const params = useSearchParams();
   const router = useRouter();
 
@@ -91,7 +91,7 @@ export default function BusPassengerPage() {
     <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
       <div className="bg-slate-800 p-8 rounded-xl w-96 space-y-4 shadow-lg">
         <h1 className="text-2xl font-bold text-center">
-          🚌 Bus Passenger Details
+          ðŸšŒ Bus Passenger Details
         </h1>
 
         <p>
@@ -103,7 +103,7 @@ export default function BusPassengerPage() {
         </p>
 
         <p>
-          Price: <span className="font-semibold">₹{price}</span>
+          Price: <span className="font-semibold">â‚¹{price}</span>
         </p>
 
         <input
@@ -146,3 +146,13 @@ export default function BusPassengerPage() {
     </div>
   );
 }
+
+export default function BusPassengerPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">Loading...</div>}>
+      <BusPassengerPageContent />
+    </Suspense>
+  );
+}
+
+

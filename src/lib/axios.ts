@@ -1,6 +1,7 @@
-import axios from "axios";
+﻿import axios from "axios";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -9,15 +10,14 @@ const api = axios.create({
   },
 });
 
-/* =========================
-   REQUEST INTERCEPTOR
-========================= */
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
 
     return config;
@@ -25,18 +25,31 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-/* =========================
-   RESPONSE INTERCEPTOR
-========================= */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      console.error("Session expired");
+    const status = error.response?.status;
+    const path = window.location.pathname;
 
+    // only logout if user is inside protected area
+    const protectedPages = [
+      "/dashboard",
+      "/bookings",
+      "/payment",
+      "/ticket",
+      "/profile"
+    ];
+
+    const onProtectedPage = protectedPages.some((p) =>
+      path.startsWith(p)
+    );
+
+    if (status === 401 && onProtectedPage) {
       localStorage.removeItem("token");
 
-      window.location.href = "/login"; // redirect
+      if (path !== "/login") {
+        window.location.href = "/login";
+      }
     }
 
     return Promise.reject(error);

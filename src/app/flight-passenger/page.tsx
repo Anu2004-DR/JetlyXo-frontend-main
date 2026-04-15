@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { createBooking } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
-export default function FlightPassengerPage() {
+function FlightPassengerPageContent() {
   const params = useSearchParams();
   const router = useRouter();
 
@@ -96,7 +96,7 @@ export default function FlightPassengerPage() {
     <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
       <div className="bg-slate-800 p-8 rounded-xl w-96 shadow-lg space-y-4">
         <h1 className="text-2xl font-bold text-center">
-          ✈ Flight Passenger Details
+          âœˆ Flight Passenger Details
         </h1>
 
         <p>
@@ -108,7 +108,7 @@ export default function FlightPassengerPage() {
         </p>
 
         <p>
-          Price: <span className="font-semibold">₹{price}</span>
+          Price: <span className="font-semibold">â‚¹{price}</span>
         </p>
 
         <input
@@ -151,3 +151,13 @@ export default function FlightPassengerPage() {
     </div>
   );
 }
+
+export default function FlightPassengerPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">Loading...</div>}>
+      <FlightPassengerPageContent />
+    </Suspense>
+  );
+}
+
+

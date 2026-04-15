@@ -4,41 +4,38 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getToken, getUser, logout } from "@/lib/auth";
 
 export default function Header() {
   const router = useRouter();
+
+  const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  /* ================= LOAD USER ================= */
   useEffect(() => {
-    const loadUser = () => {
-      const storedUser = localStorage.getItem("jetly_user");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else {
-        setUser(null);
-      }
+    const checkAuth = () => {
+      const token = getToken();
+      const currentUser = getUser();
+
+      setLoggedIn(!!token);
+      setUser(currentUser);
     };
 
-    loadUser();
+    checkAuth();
 
-    // 🔥 listen for login/logout changes
-    window.addEventListener("storage", loadUser);
+    window.addEventListener("storage", checkAuth);
 
     return () => {
-      window.removeEventListener("storage", loadUser);
+      window.removeEventListener("storage", checkAuth);
     };
   }, []);
 
-  /* ================= HANDLERS ================= */
   const handleLogin = () => {
     router.push("/login");
   };
 
   const handleBookings = () => {
-    const token = localStorage.getItem("jetly_token");
-
-    if (!token) {
+    if (!getToken()) {
       localStorage.setItem("redirectAfterLogin", "/my-booking");
       router.push("/login");
     } else {
@@ -47,15 +44,14 @@ export default function Header() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("jetly_user");
-    localStorage.removeItem("jetly_token");
-
+    logout();
+    setLoggedIn(false);
     setUser(null);
 
     router.push("/");
+    router.refresh();
   };
 
-  /* ================= UI ================= */
   return (
     <motion.header
       className="sticky top-0 z-30 glass border-b border-white/5"
@@ -65,17 +61,22 @@ export default function Header() {
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
 
-        {/* LOGO */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-white">
+        {/* Logo */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-bold text-xl text-white"
+        >
           JetlyXO <span className="text-jetly-accent">✈️</span>
         </Link>
 
-        {/* NAV */}
+        {/* Nav */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="#search" className="text-white/80 hover:text-white text-sm">Flights</Link>
-          <Link href="#" className="text-white/80 hover:text-white text-sm">Hotels</Link>
-          <Link href="#" className="text-white/80 hover:text-white text-sm">Trains</Link>
-          <Link href="#" className="text-white/80 hover:text-white text-sm">Deals</Link>
+          <Link
+            href="#search"
+            className="text-white/80 hover:text-white text-sm"
+          >
+            Flights
+          </Link>
 
           <button
             onClick={handleBookings}
@@ -85,7 +86,7 @@ export default function Header() {
           </button>
         </nav>
 
-        {/* RIGHT */}
+        {/* Right Side */}
         <div className="flex items-center gap-4">
 
           <Link
@@ -95,7 +96,7 @@ export default function Header() {
             Search Flights
           </Link>
 
-          {!user ? (
+          {!loggedIn ? (
             <button
               onClick={handleLogin}
               className="px-4 py-2 rounded-xl border border-white/20 text-white text-sm"
@@ -104,16 +105,18 @@ export default function Header() {
             </button>
           ) : (
             <div className="flex items-center gap-3">
-              <span className="text-sm text-white/80">
-                Hi, {user.email}
+
+              <span className="text-sm text-white/90 max-w-[140px] truncate">
+                Hi, {user?.name || user?.email || "User"}
               </span>
 
               <button
                 onClick={handleLogout}
-                className="px-3 py-1 rounded-lg bg-red-500 text-white text-xs"
+                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm"
               >
                 Logout
               </button>
+
             </div>
           )}
         </div>

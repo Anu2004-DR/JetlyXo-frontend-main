@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { getBookingById } from "@/lib/api";
@@ -30,7 +30,7 @@ type Booking = {
    COMPONENT
 ========================= */
 
-export default function TicketPage() {
+function TicketPageContent() {
   const params = useSearchParams();
   const router = useRouter();
   const bookingId = params.get("bookingId");
@@ -119,7 +119,7 @@ export default function TicketPage() {
     doc.text(`Type: ${booking.bookingType}`, 20, y);
     y += 10;
 
-    doc.text(`Amount Paid: ₹${booking.totalPrice}`, 20, y);
+    doc.text(`Amount Paid: â‚¹${booking.totalPrice}`, 20, y);
     y += 15;
 
     doc.setTextColor(0, 150, 0);
@@ -150,7 +150,7 @@ export default function TicketPage() {
         <div className="bg-blue-600 text-white p-5">
 
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold">✈️ JetlyXO Ticket</h1>
+            <h1 className="text-xl font-bold">âœˆï¸ JetlyXO Ticket</h1>
 
             <button
               onClick={() => router.push("/")}
@@ -198,7 +198,7 @@ export default function TicketPage() {
               Payment Details
             </h2>
             <p className="text-xl font-bold text-green-600">
-              ₹{booking.totalPrice}
+              â‚¹{booking.totalPrice}
             </p>
             <p className="text-sm text-gray-500">
               Payment Successful
@@ -230,3 +230,13 @@ export default function TicketPage() {
     </div>
   );
 }
+
+export default function TicketPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">Loading ticket...</div>}>
+      <TicketPageContent />
+    </Suspense>
+  );
+}
+
+

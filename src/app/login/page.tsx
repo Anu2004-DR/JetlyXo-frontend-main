@@ -1,13 +1,15 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { getToken, setUser } from "@/lib/auth";
 
 import { setToken } from "@/lib/auth";
 
 
+
 export default function LoginPage() {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -28,7 +30,7 @@ const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
     setLoading(true);
   
     try {
-      const res = await fetch("http://localhost:5000/api/auth/send-otp", {
+      const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -38,8 +40,8 @@ const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
   
       if (res.ok) {
         setStep("otp");
-        setTimer(60);        // 🔥 start timer
-        setCanResend(false); // 🔥 disable resend
+        setTimer(60);        // ðŸ”¥ start timer
+        setCanResend(false); // ðŸ”¥ disable resend
       }
     } catch (err) {
       console.error(err);
@@ -96,7 +98,7 @@ const verifyOTP = async () => {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
+    const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -106,7 +108,7 @@ const verifyOTP = async () => {
 
     const data = await res.json();
 
-    console.log("OTP RESPONSE:", data); // 🔍 DEBUG
+    console.log("OTP RESPONSE:", data); // ðŸ” DEBUG
 
     if (!res.ok) {
       alert(data.message);
@@ -118,17 +120,29 @@ const verifyOTP = async () => {
       return;
     }
 
-    //setToken(data.token); // ✅ SAFE STORE
+    //setToken(data.token); // âœ… SAFE STORE
 
-    //router.push("/"); // ✅ no reload
+    //router.push("/"); // âœ… no reload
     setToken(data.token);
-window.location.href = "/";
 
+setUser({
+  email: data.user?.email || email,
+  name: data.user?.name || email.split("@")[0]
+});
+
+router.replace("/");
+router.refresh();
   } catch (err) {
     console.error(err);
     alert("OTP verification failed");
   }
 };
+
+useEffect(() => {
+  if (getToken()) {
+    router.replace("/");
+  }
+}, []);
 
   useEffect(() => {
     if (timer <= 0) {
@@ -199,7 +213,7 @@ window.location.href = "/";
               Verify OTP
             </button>
   
-            {/* 🔥 RESEND SECTION */}
+            {/* ðŸ”¥ RESEND SECTION */}
             <div className="text-center mt-3 text-sm">
               {canResend ? (
                 <button
@@ -218,7 +232,7 @@ window.location.href = "/";
   
             {/* Optional UX */}
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Didn’t receive OTP? Check spam folder
+              Didnâ€™t receive OTP? Check spam folder
             </p>
           </>
         )}
@@ -227,3 +241,5 @@ window.location.href = "/";
     </div>
   );
 }
+
+

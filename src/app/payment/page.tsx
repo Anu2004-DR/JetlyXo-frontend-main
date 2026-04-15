@@ -1,185 +1,168 @@
-"use client";
+﻿"use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { getToken } from "@/lib/auth";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createOrder, getBookingById, verifyPayment } from "@/lib/api";
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay?: any;
   }
 }
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const params = useSearchParams();
   const router = useRouter();
-
-  const [loading, setLoading] = useState(false);
-
   const bookingId = params.get("bookingId");
 
-  if (!bookingId) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
-        Invalid Payment Request (Booking ID missing)
-      </div>
-    );
-  }
+  const [booking, setBooking] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
 
- 
-  const loadRazorpay = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      // already loaded
-      if (window.Razorpay) {
-        resolve(true);
-        return;
+  useEffect(() => {
+    if (!bookingId) {
+      setLoading(false);
+      return;
+    }
+
+    const loadBooking = async () => {
+      try {
+        const res = await getBookingById(Number(bookingId));
+        setBooking(res?.data || res || null);
+      } catch (error) {
+        console.error("Failed to load booking", error);
+        setBooking(null);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
+    loadBooking();
+  }, [bookingId]);
 
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-
-      document.body.appendChild(script);
-    });
-  };
-
+  const journeyLabel = useMemo(() => {
+    if (!booking) return "Travel booking";
+    if (booking.flight?.airline) return booking.flight.airline;
+    if (booking.bus?.busName) return booking.bus.busName;
+    if (booking.train?.trainName) return booking.train.trainName;
+    return `${booking.bookingType} booking`;
+  }, [booking]);
 
   const handlePayment = async () => {
+    if (!bookingId) return;
+
     try {
-      setLoading(true);
+      setProcessing(true);
+      const orderResponse = await createOrder(Number(bookingId));
+      const order = orderResponse?.order || orderResponse?.data?.order || orderResponse;
 
-      const token = getToken();
-
-      if (!token) {
-        alert("Please login first");
-        router.push("/login");
-        return;
+      if (!order?.id) {
+        throw new Error("Payment order could not be created");
       }
 
-      const sdkLoaded = await loadRazorpay();
-
-      if (!sdkLoaded) {
-        alert("Failed to load Razorpay");
-        return;
+      if (!window.Razorpay) {
+        throw new Error("Razorpay checkout failed to load");
       }
 
-      
-      const orderRes = await fetch(
-        "http://localhost:5000/api/payment/create-order",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ bookingId }),
-        }
-      );
-
-      const orderData = await orderRes.json();
-
-      console.log("ORDER RESPONSE:", orderData);
-
-      if (!orderRes.ok || !orderData.success || !orderData.order?.id) {
-        alert(orderData.message || "Order creation failed");
-        return;
-      }
-
-      const order = orderData.order;
-
-      
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      const razorpay = new window.Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_SaDtavZFKoFDmK",
         amount: order.amount,
-        currency: order.currency,
+        currency: order.currency || "INR",
         order_id: order.id,
-
         name: "JetlyXO",
-        description: "Booking Payment",
-
-        handler: async function (response: any) {
+        description: `Booking #${bookingId}`,
+        handler: async (response: any) => {
           try {
-            const verifyRes = await fetch(
-              "http://localhost:5000/api/payment/verify",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  ...response,
-                  bookingId,
-                }),
-              }
-            );
-
-            const verifyData = await verifyRes.json();
-
-            if (verifyData.success) {
-              router.replace(`/ticket?bookingId=${bookingId}`);
-            } else {
-              alert(
-                verifyData.message || "Payment verification failed"
-              );
-            }
-          } catch (error) {
-            console.error(error);
-            alert("Payment verification failed");
+            await verifyPayment({
+              ...response,
+              bookingId: Number(bookingId),
+            });
+            router.push(`/ticket?bookingId=${bookingId}`);
+          } catch (error: any) {
+            console.error("Payment verification failed", error);
+            alert(error?.response?.data?.message || error?.message || "Payment verification failed");
+          } finally {
+            setProcessing(false);
           }
         },
-
         modal: {
-          ondismiss: () => {
-            alert("Payment cancelled");
-          },
+          ondismiss: () => setProcessing(false),
         },
-
         theme: {
-          color: "#16a34a",
+          color: "#2563eb",
         },
-      };
+      });
 
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
-    } catch (err: any) {
-      console.error("PAYMENT ERROR:", err);
-      alert(err.message || "Payment failed");
-    } finally {
-      setLoading(false);
+      razorpay.open();
+    } catch (error: any) {
+      console.error("Payment start failed", error);
+      alert(error?.response?.data?.message || error?.message || "Unable to start payment");
+      setProcessing(false);
     }
   };
 
- 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4 sm:px-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md">
-        <h1 className="text-xl sm:text-2xl font-bold mb-6 text-center">
-          💳 JetlyXO Payment
-        </h1>
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Loading payment...</div>;
+  }
 
-        <p className="text-xs sm:text-sm text-gray-300 text-center">
-          Booking ID: <span className="font-bold">{bookingId}</span>
-        </p>
+  if (!bookingId || !booking) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Booking not found</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 space-y-5">
+        <div>
+          <p className="text-sm text-blue-300">Secure checkout</p>
+          <h1 className="text-3xl font-bold mt-1">Complete Payment</h1>
+        </div>
+
+        <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
+          <div className="flex justify-between">
+            <span className="text-white/70">Booking ID</span>
+            <span className="font-semibold">{booking.id}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-white/70">Journey</span>
+            <span className="font-semibold">{journeyLabel}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-white/70">Passenger</span>
+            <span className="font-semibold">{booking.passengerName || "Guest"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-white/70">Status</span>
+            <span className="font-semibold">{booking.status}</span>
+          </div>
+          <div className="flex justify-between text-lg pt-2 border-t border-white/10">
+            <span className="text-white/80">Amount</span>
+            <span className="font-bold">INR {booking.totalPrice}</span>
+          </div>
+        </div>
 
         <button
           onClick={handlePayment}
-          disabled={loading}
-          className="w-full sm:w-auto bg-green-600 py-3 px-6 mt-6 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
+          disabled={processing}
+          className="w-full rounded-xl bg-blue-600 py-3 font-semibold hover:bg-blue-700 disabled:opacity-60"
         >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-              Processing...
-            </span>
-          ) : (
-            "Pay Now"
-          )}
+          {processing ? "Opening payment..." : "Pay with Razorpay"}
+        </button>
+
+        <button
+          onClick={() => router.push("/bookings")}
+          className="w-full rounded-xl border border-white/15 py-3 text-white/80 hover:bg-white/5"
+        >
+          Back to bookings
         </button>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Loading payment...</div>}>
+      <PaymentPageContent />
+    </Suspense>
   );
 }

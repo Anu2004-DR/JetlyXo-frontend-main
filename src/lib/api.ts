@@ -1,8 +1,10 @@
-import apiClient from "@/lib/apiClient";
+﻿import apiClient from "@/lib/apiClient";
+
 export type FlightSearchParams = {
   from?: string;
   to?: string;
   departure?: string;
+  date?: string;
   return?: string;
   travellers?: number;
   cabin?: string;
@@ -12,8 +14,14 @@ export type FlightResult = {
   airline: string;
   price: number;
   duration: string;
-  stops: string;
+  stops: string | number;
   dep: string;
+  id?: number;
+  seats?: number;
+  from?: string;
+  to?: string;
+  departure?: string;
+  arrival?: string;
 };
 
 export type Booking = {
@@ -24,51 +32,67 @@ export type Booking = {
   createdAt: string;
   passengerName?: string;
   pnr?: string;
-  bus?: any;
-  flightData?: any;
-  train?: any;
+  bus?: {
+    id?: number;
+    busName?: string;
+    operator?: string;
+    name?: string;
+    fromCity?: string;
+    toCity?: string;
+    price?: number;
+  } | null;
+  flight?: {
+    id?: number;
+    airline?: string;
+    fromCity?: string;
+    toCity?: string;
+    price?: number;
+  } | null;
+  flightData?: {
+    from?: string;
+    to?: string;
+    price?: number;
+    departure?: string;
+  } | null;
+  train?: {
+    id?: number;
+    trainName?: string;
+    name?: string;
+    fromCity?: string;
+    toCity?: string;
+    price?: number;
+  } | null;
 };
 
 export async function createBooking(data: any) {
   try {
     const res = await apiClient.post("/api/bookings", data);
-    return res.data;
+    return {
+      ...res.data,
+      id: res.data?.bookingId ?? res.data?.data?.id ?? res.data?.id ?? null,
+    };
   } catch (err: any) {
-    console.error(
-      "CREATE BOOKING ERROR:",
-      err?.response?.data || err.message
-    );
+    console.error("CREATE BOOKING ERROR:", err?.response?.data || err.message);
     throw err;
   }
 }
 
-/* PAYMENT CREATE ORDER */
 export async function createOrder(bookingId: number | string) {
   try {
-    const res = await apiClient.post("/api/payment/create-order", {
-      bookingId,
-    });
-
+    const res = await apiClient.post("/api/payment/create-order", { bookingId });
     return res.data;
   } catch (err: any) {
-    console.error(
-      "CREATE ORDER ERROR:",
-      err?.response?.data || err.message
-    );
+    console.error("CREATE ORDER ERROR:", err?.response?.data || err.message);
     throw err;
   }
 }
 
-/* PAYMENT VERIFY */
 export async function verifyPayment(data: any) {
   try {
     const res = await apiClient.post("/api/payment/verify", data);
     return res.data;
   } catch (err: any) {
-    console.error(
-      "VERIFY PAYMENT ERROR:",
-      err?.response?.data || err.message
-    );
+    console.error("VERIFY PAYMENT ERROR:", err?.response?.data || err.message);
     throw err;
   }
 }
@@ -76,17 +100,12 @@ export async function verifyPayment(data: any) {
 export async function fetchBookings(): Promise<Booking[]> {
   try {
     const res = await apiClient.get("/api/bookings/history");
-
-    console.log("BOOKINGS RESPONSE:", res.data);
-
-    // Handle both formats safely
     return res.data?.data || res.data || [];
   } catch (err: any) {
     console.error("FETCH BOOKINGS ERROR:", err?.response?.data || err.message);
     return [];
   }
 }
-
 
 export async function getBookingById(id: number) {
   try {
@@ -98,7 +117,6 @@ export async function getBookingById(id: number) {
   }
 }
 
-
 export async function cancelBooking(id: string) {
   try {
     const res = await apiClient.post(`/api/bookings/cancel/${id}`);
@@ -109,29 +127,27 @@ export async function cancelBooking(id: string) {
   }
 }
 
-
 export async function searchFlights(params: FlightSearchParams) {
   try {
-    if (!params.from || !params.to) {
-      throw new Error("From and To are required");
-    }
+    const from = params.from || "BLR";
+    const to = params.to || "DEL";
 
     const res = await apiClient.get("/api/flights/search", {
       params: {
-        from: params.from,
-        to: params.to,
+        from,
+        to,
+        departure: params.departure || params.date,
         travellers: params.travellers || 1,
-        cabin: params.cabin || "economy"
-      }
+        cabin: params.cabin || "economy",
+      },
     });
 
-    return res.data;
+    return res.data?.flights || res.data?.data || res.data || [];
   } catch (err: any) {
     console.error("FLIGHT SEARCH ERROR:", err?.response?.data || err.message);
     return [];
   }
 }
-
 
 export async function searchBuses(params: { from?: string; to?: string }) {
   try {
@@ -142,17 +158,26 @@ export async function searchBuses(params: { from?: string; to?: string }) {
     const res = await apiClient.get("/api/buses/search", {
       params: {
         from: params.from,
-        to: params.to
-      }
+        to: params.to,
+      },
     });
 
-    return res.data;
+    return res.data?.data || res.data || [];
   } catch (err: any) {
     console.error("BUS SEARCH ERROR:", err?.response?.data || err.message);
     return [];
   }
 }
 
+export async function fetchBuses() {
+  try {
+    const res = await apiClient.get("/api/buses");
+    return res.data?.data || res.data || [];
+  } catch (err: any) {
+    console.error("FETCH BUSES ERROR:", err?.response?.data || err.message);
+    return [];
+  }
+}
 
 export async function searchTrains(params: { from?: string; to?: string }) {
   try {
@@ -163,13 +188,23 @@ export async function searchTrains(params: { from?: string; to?: string }) {
     const res = await apiClient.get("/api/trains/search", {
       params: {
         from: params.from,
-        to: params.to
-      }
+        to: params.to,
+      },
     });
 
-    return res.data;
+    return res.data?.data || res.data || [];
   } catch (err: any) {
     console.error("TRAIN SEARCH ERROR:", err?.response?.data || err.message);
+    return [];
+  }
+}
+
+export async function fetchTrains() {
+  try {
+    const res = await apiClient.get("/api/trains");
+    return res.data?.data || res.data || [];
+  } catch (err: any) {
+    console.error("FETCH TRAINS ERROR:", err?.response?.data || err.message);
     return [];
   }
 }
@@ -177,14 +212,12 @@ export async function searchTrains(params: { from?: string; to?: string }) {
 export async function fetchRecommendations(bookings: any[]) {
   try {
     const res = await apiClient.post("/api/recommendations", { bookings });
-    return res.data;
+    return res.data?.data || res.data || [];
   } catch (err: any) {
     console.error("RECOMMENDATION ERROR:", err?.response?.data || err.message);
     return [];
   }
 }
-
-
 
 export type Recommendation = {
   id: string;
@@ -206,36 +239,44 @@ export type AIInputBooking = {
 
 export function mapBookingsForAI(bookings: Booking[]): AIInputBooking[] {
   return bookings
-    .map((b: Booking) => {
-
-      if (b.flightData) {
+    .map((booking) => {
+      if (booking.flightData) {
         return {
-          source: b.flightData.from,
-          destination: b.flightData.to,
-          price: b.flightData.price,
-          type: "flight",
+          source: booking.flightData.from || "",
+          destination: booking.flightData.to || "",
+          price: booking.flightData.price || 0,
+          type: "flight" as const,
         };
       }
 
-      if (b.bus) {
+      if (booking.flight) {
         return {
-          source: b.bus.fromCity,
-          destination: b.bus.toCity,
-          price: b.bus.price,
-          type: "bus",
+          source: booking.flight.fromCity || "",
+          destination: booking.flight.toCity || "",
+          price: booking.flight.price || 0,
+          type: "flight" as const,
         };
       }
 
-      if (b.train) {
+      if (booking.bus) {
         return {
-          source: b.train.fromCity,
-          destination: b.train.toCity,
-          price: b.train.price,
-          type: "train",
+          source: booking.bus.fromCity || "",
+          destination: booking.bus.toCity || "",
+          price: booking.bus.price || 0,
+          type: "bus" as const,
+        };
+      }
+
+      if (booking.train) {
+        return {
+          source: booking.train.fromCity || "",
+          destination: booking.train.toCity || "",
+          price: booking.train.price || 0,
+          type: "train" as const,
         };
       }
 
       return null;
     })
-    .filter((b): b is AIInputBooking => b !== null);
+    .filter((booking): booking is AIInputBooking => booking !== null);
 }

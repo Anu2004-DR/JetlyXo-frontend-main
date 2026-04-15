@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { createBooking } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
-export default function TrainPassengerPage() {
+function TrainPassengerPageContent() {
   const params = useSearchParams();
   const router = useRouter();
 
@@ -49,7 +49,7 @@ export default function TrainPassengerPage() {
 
       /* PAYLOAD */
       const payload = {
-        bookingType: "TRAIN", // ✅ fixed from BUS to TRAIN
+        bookingType: "TRAIN", // âœ… fixed from BUS to TRAIN
         entityId: Number(trainId),
 
         passengerName: name,
@@ -91,7 +91,7 @@ export default function TrainPassengerPage() {
     <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
       <div className="bg-slate-800 p-8 rounded-xl w-96 space-y-4 shadow-lg">
         <h1 className="text-2xl font-bold text-center">
-          🚆 Train Passenger Details
+          ðŸš† Train Passenger Details
         </h1>
 
         <p>
@@ -103,7 +103,7 @@ export default function TrainPassengerPage() {
         </p>
 
         <p>
-          Price: <span className="font-semibold">₹{price}</span>
+          Price: <span className="font-semibold">â‚¹{price}</span>
         </p>
 
         <input
@@ -146,3 +146,13 @@ export default function TrainPassengerPage() {
     </div>
   );
 }
+
+export default function TrainPassengerPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">Loading...</div>}>
+      <TrainPassengerPageContent />
+    </Suspense>
+  );
+}
+
+

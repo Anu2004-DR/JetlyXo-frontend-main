@@ -63,8 +63,7 @@ function BusPassengerPageContent() {
       /* CREATE BOOKING */
       const res = await createBooking(payload);
 
-      const bookingId =
-        res?.booking?.id || res?.data?.booking?.id || res?.id;
+const bookingId = res.bookingId;
 
       if (!bookingId) {
         alert("Booking failed");

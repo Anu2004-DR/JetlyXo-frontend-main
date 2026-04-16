@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createOrder, getBookingById, verifyPayment } from "@/lib/api";
-
+import Script from "next/script";
 declare global {
   interface Window {
     Razorpay?: any;
@@ -159,10 +159,22 @@ function PaymentPageContent() {
   );
 }
 
+
 export default function PaymentPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Loading payment...</div>}>
-      <PaymentPageContent />
-    </Suspense>
+    <>
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="beforeInteractive"
+      />
+
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+          Loading payment...
+        </div>
+      }>
+        <PaymentPageContent />
+      </Suspense>
+    </>
   );
 }

@@ -67,9 +67,19 @@ export type Booking = {
 export async function createBooking(data: any) {
   try {
     const res = await apiClient.post("/api/bookings", data);
+
+    const bookingId =
+      res.data?.booking?.id ||
+      res.data?.bookingId ||
+      res.data?.data?.booking?.id ||
+      res.data?.data?.id ||
+      res.data?.id ||
+      null;
+
     return {
-      ...res.data,
-      id: res.data?.bookingId ?? res.data?.data?.id ?? res.data?.id ?? null,
+      success: true,
+      bookingId,
+      raw: res.data,
     };
   } catch (err: any) {
     console.error("CREATE BOOKING ERROR:", err?.response?.data || err.message);

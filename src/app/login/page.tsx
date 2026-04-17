@@ -1,245 +1,359 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getToken, setUser } from "@/lib/auth";
-
-import { setToken } from "@/lib/auth";
-
-
+import { useRouter, useSearchParams } from "next/navigation";
+import { getToken, setToken, setUser } from "@/lib/auth";
 
 export default function LoginPage() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_BASE =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const redirectPath = searchParams.get("redirect") || "/";
 
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
- 
-const [password, setPassword] = useState("");
+
+  const [otpArray, setOtpArray] = useState([
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+
+  const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const [timer, setTimer] = useState(0);
-const [canResend, setCanResend] = useState(true);
-const [loading, setLoading] = useState(false);
+  const [canResend, setCanResend] = useState(true);
 
-const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
-  /* ================= SEND OTP ================= */
-  const sendOTP = async () => {
-    if (!email) return alert("Enter email");
-  
-    setLoading(true);
-  
+  /* =========================
+     CHECK TOKEN VALIDITY
+  ========================= */
+  useEffect(() => {
+    const token = getToken();
+
+    if (!token) return;
+
     try {
-      const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email })
-      });
-  
-      if (res.ok) {
-        setStep("otp");
-        setTimer(60);        // ðŸ”¥ start timer
-        setCanResend(false); // ðŸ”¥ disable resend
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const expired = payload.exp * 1000 < Date.now();
+
+      if (expired) {
+        localStorage.removeItem("token");
+        return;
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+
+      router.replace(redirectPath);
+    } catch {
+      localStorage.removeItem("token");
     }
-  };
+  }, [router, redirectPath]);
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (!/^\d?$/.test(value)) return; // only digits
-  
-    const newOtp = [...otpArray];
-    newOtp[index] = value;
-    setOtpArray(newOtp);
-  
-    // move to next box
-    if (value && index < 5) {
-      const next = document.getElementById(`otp-${index + 1}`);
-      next?.focus();
-    }
-  };
-
-
-  
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === "Backspace" && !otpArray[index] && index > 0) {
-      const prev = document.getElementById(`otp-${index - 1}`);
-      prev?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const paste = e.clipboardData.getData("text").slice(0, 6);
-  
-    if (!/^\d+$/.test(paste)) return;
-  
-    const newOtp = paste.split("");
-    setOtpArray(newOtp);
-  
-    // focus last box
-    const last = document.getElementById(`otp-${newOtp.length - 1}`);
-    last?.focus();
-  };
-
-  /* ================= VERIFY OTP ================= */
-  
-
-const verifyOTP = async () => {
-  const finalOtp = otpArray.join("");
-
-  if (finalOtp.length !== 6) {
-    alert("Enter valid OTP");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ email, otp: finalOtp })
-    });
-
-    const data = await res.json();
-
-    console.log("OTP RESPONSE:", data); // ðŸ” DEBUG
-
-    if (!res.ok) {
-      alert(data.message);
-      return;
-    }
-
-    if (!data.token || typeof data.token !== "string") {
-      alert("Invalid token from server");
-      return;
-    }
-
-    //setToken(data.token); // âœ… SAFE STORE
-
-    //router.push("/"); // âœ… no reload
-    setToken(data.token);
-
-setUser({
-  email: data.user?.email || email,
-  name: data.user?.name || email.split("@")[0]
-});
-
-router.replace("/");
-router.refresh();
-  } catch (err) {
-    console.error(err);
-    alert("OTP verification failed");
-  }
-};
-
-useEffect(() => {
-  if (getToken()) {
-    router.replace("/");
-  }
-}, []);
-
+  /* =========================
+     TIMER
+  ========================= */
   useEffect(() => {
     if (timer <= 0) {
       setCanResend(true);
       return;
     }
-  
+
     const interval = setInterval(() => {
       setTimer((prev) => prev - 1);
     }, 1000);
-  
+
     return () => clearInterval(interval);
   }, [timer]);
 
- 
+  /* =========================
+     SEND OTP
+  ========================= */
+  const sendOTP = async () => {
+    if (!email.trim()) {
+      alert("Enter your email");
+      return;
+    }
 
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to send OTP");
+        return;
+      }
+
+      setStep("otp");
+      setTimer(60);
+      setCanResend(false);
+    } catch (error) {
+      console.error(error);
+      alert("Unable to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =========================
+     OTP INPUT
+  ========================= */
+  const handleOtpChange = (
+    value: string,
+    index: number
+  ) => {
+    if (!/^\d?$/.test(value)) return;
+
+    const updated = [...otpArray];
+    updated[index] = value;
+    setOtpArray(updated);
+
+    if (value && index < 5) {
+      const next = document.getElementById(
+        `otp-${index + 1}`
+      ) as HTMLInputElement | null;
+
+      next?.focus();
+    }
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === "Backspace" && !otpArray[index] && index > 0) {
+      const prev = document.getElementById(
+        `otp-${index - 1}`
+      ) as HTMLInputElement | null;
+
+      prev?.focus();
+    }
+  };
+
+  const handlePaste = (
+    e: React.ClipboardEvent<HTMLDivElement>
+  ) => {
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
+
+    if (!pasted) return;
+
+    const filled = pasted.split("");
+
+    while (filled.length < 6) filled.push("");
+
+    setOtpArray(filled);
+
+    const lastIndex = Math.min(pasted.length - 1, 5);
+
+    const last = document.getElementById(
+      `otp-${lastIndex}`
+    ) as HTMLInputElement | null;
+
+    last?.focus();
+  };
+
+  /* =========================
+     VERIFY OTP
+  ========================= */
+  const verifyOTP = async () => {
+    const finalOtp = otpArray.join("");
+
+    if (finalOtp.length !== 6) {
+      alert("Enter valid 6 digit OTP");
+      return;
+    }
+
+    try {
+      setVerifying(true);
+
+      const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          otp: finalOtp,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "OTP verification failed");
+        return;
+      }
+
+      if (!data.token) {
+        alert("Invalid token from server");
+        return;
+      }
+
+      setToken(data.token);
+
+      setUser({
+        email: data.user?.email || email,
+        name:
+          data.user?.name ||
+          email.split("@")[0],
+      });
+
+      router.replace(redirectPath);
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      alert("Verification failed");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  /* =========================
+     UI
+  ========================= */
   return (
-    <div className="min-h-screen flex items-center justify-center bg-navy-950">
-  
-      <div className="bg-white p-6 rounded-xl w-[320px]">
-  
-        <h2 className="text-lg mb-4 text-center">
-          Login / Signup
-        </h2>
-  
-        {step === "email" ? (
-          <>
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+
+        {/* HEADER */}
+        <div className="text-center mb-6">
+          <p className="text-blue-400 text-sm">
+            Welcome to Jetly
+          </p>
+
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1">
+            Login / Signup
+          </h1>
+
+          <p className="text-white/60 text-sm mt-2">
+            Secure OTP verification
+          </p>
+        </div>
+
+        {/* EMAIL STEP */}
+        {step === "email" && (
+          <div className="space-y-4">
             <input
+              type="email"
               placeholder="Enter Email"
-              className="mb-3 p-2 border w-full"
-              onChange={(e) => setEmail(e.target.value)}
+              value={email}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500"
             />
-  
+
             <button
               onClick={sendOTP}
               disabled={loading}
-              className="bg-blue-600 text-white w-full py-2 rounded"
+              className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl text-white font-semibold disabled:opacity-60"
             >
-              {loading ? "Sending..." : "Send OTP"}
+              {loading
+                ? "Sending OTP..."
+                : "Send OTP"}
             </button>
-          </>
-        ) : (
-          <>
+          </div>
+        )}
+
+        {/* OTP STEP */}
+        {step === "otp" && (
+          <div className="space-y-5">
+
+            <p className="text-center text-sm text-white/70">
+              OTP sent to{" "}
+              <span className="text-white font-medium">
+                {email}
+              </span>
+            </p>
+
             <div
-  className="flex justify-between gap-2 mb-3"
-  onPaste={handlePaste}
->
-  {otpArray.map((digit, index) => (
-    <input
-      key={index}
-      id={`otp-${index}`}
-      type="text"
-      
-      maxLength={1}
-      value={digit}
-      onChange={(e) =>
-        handleOtpChange(e.target.value, index)
-      }
-      onKeyDown={(e) => handleKeyDown(e, index)}
-      className="w-12 h-12 text-center border border-gray-300 rounded-lg text-lg font-semibold text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-  ))}
-</div>
+              className="flex justify-between gap-2"
+              onPaste={handlePaste}
+            >
+              {otpArray.map((digit, index) => (
+                <input
+                  key={index}
+                  id={`otp-${index}`}
+                  type="text"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) =>
+                    handleOtpChange(
+                      e.target.value,
+                      index
+                    )
+                  }
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, index)
+                  }
+                  className="w-11 h-12 sm:w-12 sm:h-12 text-center rounded-xl bg-slate-800 border border-white/10 text-white text-lg font-semibold outline-none focus:border-blue-500"
+                />
+              ))}
+            </div>
+
             <button
               onClick={verifyOTP}
-              className="bg-green-600 text-white w-full py-2 rounded hover:bg-green-700"
+              disabled={verifying}
+              className="w-full bg-green-600 hover:bg-green-700 py-3 rounded-xl text-white font-semibold disabled:opacity-60"
             >
-              Verify OTP
+              {verifying
+                ? "Verifying..."
+                : "Verify OTP"}
             </button>
-  
-            {/* ðŸ”¥ RESEND SECTION */}
-            <div className="text-center mt-3 text-sm">
+
+            <div className="text-center text-sm">
               {canResend ? (
                 <button
                   onClick={sendOTP}
-                  className="text-blue-600 hover:underline"
+                  className="text-blue-400 hover:underline"
                 >
                   Resend OTP
                 </button>
               ) : (
-                <p className="text-gray-500">
+                <p className="text-white/50">
                   Resend OTP in{" "}
-                  <span className="font-semibold">{timer}s</span>
+                  <span className="text-white">
+                    {timer}s
+                  </span>
                 </p>
               )}
             </div>
-  
-            {/* Optional UX */}
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              Didnâ€™t receive OTP? Check spam folder
-            </p>
-          </>
+
+            <button
+              onClick={() => {
+                setStep("email");
+                setOtpArray([
+                  "",
+                  "",
+                  "",
+                  "",
+                  "",
+                  "",
+                ]);
+              }}
+              className="w-full border border-white/10 py-3 rounded-xl text-white/70 hover:bg-white/5"
+            >
+              Change Email
+            </button>
+          </div>
         )}
-  
       </div>
     </div>
   );
 }
-
-

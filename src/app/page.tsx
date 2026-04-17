@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import Header from "@/components/Header";
+
 import Hero from "@/components/Hero";
 import Services from "@/components/Services";
 import SearchWidget from "@/components/SearchWidget";
@@ -12,7 +12,7 @@ import TrendingDestinations from "@/components/TrendingDestinations";
 import Deals from "@/components/Deals";
 import Features from "@/components/Features";
 import Trust from "@/components/Trust";
-import Footer from "@/components/Footer";
+
 import AIAssistant from "@/components/AIAssistant";
 import FlightAnimation from "@/components/FlightAnimation";
 import { getToken } from "@/lib/auth";
@@ -219,7 +219,7 @@ const [openChat, setOpenChat] = useState(false);
   return (
     <main className="min-h-screen bg-navy-950">
 
-      <Header />
+     
       <Hero />
 
       {showOffer && (
@@ -337,7 +337,7 @@ const [openChat, setOpenChat] = useState(false);
       <Deals />
       <Features />
       <Trust />
-      <Footer />
+    
 
       {showLoginModal && (
   <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">

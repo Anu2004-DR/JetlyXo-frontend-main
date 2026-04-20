@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { searchFlights, searchBuses, searchTrains } from "@/lib/api";
-
+import { getToken } from "@/lib/auth";
 function ResultsPageContent() {
   const params = useSearchParams();
   const router = useRouter();
@@ -44,37 +44,56 @@ function ResultsPageContent() {
     loadResults();
   }, [type, from, to]);
 
-  const handleBookNow = (item: any) => {
-    console.log("Book clicked:", item);
+  
 
-    if (type === "flight") {
-      router.push(
-        `/flight-passenger?flightId=${item.id}&price=${item.price || 0}&airline=${encodeURIComponent(
-          item.airline || item.name || "Flight"
-        )}&duration=${encodeURIComponent(item.duration || "")}`
-      );
-      return;
-    }
+const handleBookNow = (item: any) => {
+  let target = "";
 
-    if (type === "bus") {
-      router.push(
-        `/bus-passenger?busId=${item.id}&price=${item.price || 0}&operator=${encodeURIComponent(
-          item.busName || item.operator || "Bus"
-        )}&duration=${encodeURIComponent(
-          item.duration || item.departure || ""
-        )}`
-      );
-      return;
-    }
+  if (type === "flight") {
+    target =
+      `/flight-passenger?flightId=${item.id}` +
+      `&price=${item.price || 0}` +
+      `&airline=${encodeURIComponent(
+        item.airline || item.name || "Flight"
+      )}` +
+      `&duration=${encodeURIComponent(item.duration || "")}`;
+  }
 
-    router.push(
-      `/train-passenger?trainId=${item.id}&price=${item.price || 0}&trainName=${encodeURIComponent(
-        item.trainName || item.name || "Train"
-      )}&duration=${encodeURIComponent(
+  else if (type === "bus") {
+    target =
+      `/bus-passenger?busId=${item.id}` +
+      `&price=${item.price || 0}` +
+      `&operator=${encodeURIComponent(
+        item.busName || item.operator || "Bus"
+      )}` +
+      `&duration=${encodeURIComponent(
         item.duration || item.departure || ""
-      )}`
+      )}`;
+  }
+
+  else {
+    target =
+      `/train-passenger?trainId=${item.id}` +
+      `&price=${item.price || 0}` +
+      `&trainName=${encodeURIComponent(
+        item.trainName || item.name || "Train"
+      )}` +
+      `&duration=${encodeURIComponent(
+        item.duration || item.departure || ""
+      )}`;
+  }
+
+  const token = getToken();
+
+  if (!token) {
+    router.push(
+      `/login?redirect=${encodeURIComponent(target)}`
     );
-  };
+    return;
+  }
+
+  router.push(target);
+};
 
   if (loading) {
     return (

@@ -95,7 +95,7 @@ const bookingId = res.bookingId;
     <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
       <div className="bg-slate-800 p-8 rounded-xl w-96 shadow-lg space-y-4">
         <h1 className="text-2xl font-bold text-center">
-          âœˆ Flight Passenger Details
+           Flight Passenger Details
         </h1>
 
         <p>
@@ -107,7 +107,7 @@ const bookingId = res.bookingId;
         </p>
 
         <p>
-          Price: <span className="font-semibold">â‚¹{price}</span>
+          Price: <span className="font-semibold">&#8377;{price}</span>
         </p>
 
         <input

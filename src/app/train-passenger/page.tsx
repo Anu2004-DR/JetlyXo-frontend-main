@@ -49,7 +49,7 @@ function TrainPassengerPageContent() {
 
       /* PAYLOAD */
       const payload = {
-        bookingType: "TRAIN", // âœ… fixed from BUS to TRAIN
+        bookingType: "TRAIN", 
         entityId: Number(trainId),
 
         passengerName: name,
@@ -90,7 +90,7 @@ const bookingId = res.bookingId;
     <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
       <div className="bg-slate-800 p-8 rounded-xl w-96 space-y-4 shadow-lg">
         <h1 className="text-2xl font-bold text-center">
-          ðŸš† Train Passenger Details
+           Train Passenger Details
         </h1>
 
         <p>
@@ -102,7 +102,7 @@ const bookingId = res.bookingId;
         </p>
 
         <p>
-          Price: <span className="font-semibold">â‚¹{price}</span>
+          Price: <span className="font-semibold">&#8377;{price}</span>
         </p>
 
         <input

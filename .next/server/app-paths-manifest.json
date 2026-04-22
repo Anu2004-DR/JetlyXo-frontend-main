@@ -1,8 +1,6 @@
 {
-  "/page": "app/page.js",
-  "/payment/page": "app/payment/page.js",
-  "/flight-passenger/page": "app/flight-passenger/page.js",
-  "/my-bookings/page": "app/my-bookings/page.js",
   "/ticket/page": "app/ticket/page.js",
-  "/results/page": "app/results/page.js"
+  "/page": "app/page.js",
+  "/bus-passenger/page": "app/bus-passenger/page.js",
+  "/payment/page": "app/payment/page.js"
 }

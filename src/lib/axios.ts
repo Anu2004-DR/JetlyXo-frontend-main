@@ -28,16 +28,26 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (typeof window === "undefined") {
+      return Promise.reject(error);
+    }
+
     const status = error.response?.status;
     const path = window.location.pathname;
 
-    // only logout if user is inside protected area
     const protectedPages = [
       "/dashboard",
       "/bookings",
+      "/my-bookings",
       "/payment",
       "/ticket",
-      "/profile"
+      "/profile",
+      "/flight-passenger",
+      "/bus-passenger",
+      "/train-passenger",
+      "/checkout",
+      "/scanner",
+      "/admin"
     ];
 
     const onProtectedPage = protectedPages.some((p) =>
@@ -46,6 +56,12 @@ api.interceptors.response.use(
 
     if (status === 401 && onProtectedPage) {
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      sessionStorage.setItem(
+        "sessionExpired",
+        "Your session expired. Please login again."
+      );
 
       if (path !== "/login") {
         window.location.href = "/login";

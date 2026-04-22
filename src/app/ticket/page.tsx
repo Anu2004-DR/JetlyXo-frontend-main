@@ -141,11 +141,19 @@ function TicketPageContent() {
     doc.text("09:30 PM", 140, 166);
 
     // QR Code
-    const qr = await QRCode.toDataURL(
+    /*const qr = await QRCode.toDataURL(
       `JETLY|PNR:${booking.pnr}|BOOKING:${booking.id}`
-    );
+    );*/
+   
 
-    doc.addImage(qr, "PNG", 70, 190, 70, 70);
+    const verifyUrl = `${window.location.origin}/verify/${booking.pnr}`;
+
+const qr = await QRCode.toDataURL(verifyUrl, {
+  width: 300,
+  margin: 2,
+  errorCorrectionLevel: "H",
+});
+doc.addImage(qr, "PNG", 65, 188, 80, 80);
 
     doc.setFontSize(10);
     doc.text("Scan to verify ticket", 78, 267);

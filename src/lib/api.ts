@@ -127,6 +127,15 @@ export async function getBookingById(id: number) {
   }
 }
 
+export async function verifyTicket(pnr: string) {
+  try {
+    const res = await apiClient.get(`/api/verify/${pnr}`);
+    return res.data;
+  } catch (err: any) {
+    console.error("VERIFY TICKET ERROR:", err?.response?.data || err.message);
+    throw err;
+  }
+} 
 export async function cancelBooking(id: string) {
   try {
     const res = await apiClient.post(`/api/bookings/cancel/${id}`);
@@ -228,6 +237,8 @@ export async function fetchRecommendations(bookings: any[]) {
     return [];
   }
 }
+
+
 
 export type Recommendation = {
   id: string;

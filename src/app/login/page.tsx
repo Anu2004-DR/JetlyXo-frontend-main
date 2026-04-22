@@ -31,6 +31,8 @@ export default function LoginPage() {
   const [timer, setTimer] = useState(0);
   const [canResend, setCanResend] = useState(true);
 
+  const [notice, setNotice] = useState("");
+
   /* =========================
      CHECK TOKEN VALIDITY
   ========================= */
@@ -45,14 +47,28 @@ export default function LoginPage() {
 
       if (expired) {
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
         return;
       }
 
       router.replace(redirectPath);
     } catch {
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
     }
   }, [router, redirectPath]);
+
+  /* =========================
+     SESSION EXPIRED NOTICE
+  ========================= */
+  useEffect(() => {
+    const msg = sessionStorage.getItem("sessionExpired");
+
+    if (msg) {
+      setNotice(msg);
+      sessionStorage.removeItem("sessionExpired");
+    }
+  }, []);
 
   /* =========================
      TIMER
@@ -244,6 +260,12 @@ export default function LoginPage() {
           <p className="text-white/60 text-sm mt-2">
             Secure OTP verification
           </p>
+
+          {notice && (
+            <div className="mt-3 bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm rounded-xl px-4 py-2">
+              {notice}
+            </div>
+          )}
         </div>
 
         {/* EMAIL STEP */}

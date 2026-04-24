@@ -11,20 +11,15 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/bus-passenger/page": [
+    "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/bus-passenger/page.js"
+      "static/chunks/app/login/page.js"
     ],
-    "/payment/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/payment/page.js"
-    ],
-    "/ticket/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/ticket/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

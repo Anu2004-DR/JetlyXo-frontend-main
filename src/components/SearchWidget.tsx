@@ -80,51 +80,40 @@ export default function SearchWidget({
     );
   }, []);
 
-  const handleSearch = async (event?: React.FormEvent | React.MouseEvent) => {
-    event?.preventDefault();
-    setError(null);
-    setLoading(true);
+  let isSearching = false;
 
-    try {
-      await fetch(`${API_BASE}/api/behavior/track`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          action: "SEARCH",
-          metadata: { from, to },
-        }),
-      });
+const handleSearch = async (event?: React.FormEvent) => {
+  event?.preventDefault();
 
-      const params: FlightSearchParams = {
-        from: from || undefined,
-        to: to || undefined,
-        departure: departure || undefined,
-        return: activeTab !== "one-way" ? returnDate || undefined : undefined,
-        travellers,
-        cabin,
-      };
+  if (isSearching) return;
+  isSearching = true;
 
-      let results = await searchFlights(params);
+  setError(null);
+  setLoading(true);
 
-      if (!results || results.length === 0) {
-        results = [
-          {
-            airline: "IndiGo",
-            price: 5980,
-            duration: "5h 20m",
-            stops: "1 stop",
-            dep: "06:30",
-          },
-        ];
-      }
+  try {
+    // non-blocking tracking
+    fetch(`${API_BASE}/api/behavior/track`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "SEARCH",
+        metadata: { from, to },
+      }),
+    }).catch(() => {});
 
-      publishResults(results);
-      scrollToResults();
-    } catch (err) {
-      console.error(err);
+    const params: FlightSearchParams = {
+      from: from || undefined,
+      to: to || undefined,
+      departure: departure || undefined,
+      return: activeTab !== "one-way" ? returnDate || undefined : undefined,
+      travellers,
+      cabin,
+    };
+
+    const results = await searchFlights(params);
+
+    if (!results || results.length === 0) {
       publishResults([
         {
           airline: "IndiGo",
@@ -134,12 +123,19 @@ export default function SearchWidget({
           dep: "06:30",
         },
       ]);
-      scrollToResults();
-      setError(null);
-    } finally {
-      setLoading(false);
+    } else {
+      publishResults(results);
     }
-  };
+
+    scrollToResults();
+  } catch (err: any) {
+    console.error(err);
+    setError(err.message || "Search failed");
+  } finally {
+    setLoading(false);
+    isSearching = false;
+  }
+};
 
   const handleUseLocation = () => {
     navigator.geolocation.getCurrentPosition(async (position) => {

@@ -180,7 +180,10 @@ export async function searchFlights(
       err?.response?.data || err.message
     );
 
-    return [];
+    throw new Error(
+      err?.response?.data?.message ||
+      "Flight search failed"
+    );
   }
 }
 

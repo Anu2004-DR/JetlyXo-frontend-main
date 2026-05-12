@@ -146,24 +146,40 @@ export async function cancelBooking(id: string) {
   }
 }
 
-export async function searchFlights(params: FlightSearchParams) {
+export async function searchFlights(
+  params: FlightSearchParams
+) {
   try {
-    const from = params.from || "BLR";
-    const to = params.to || "DEL";
 
-    const res = await apiClient.get("/api/flights/search", {
-      params: {
-        from,
-        to,
-        departure: params.departure || params.date,
-        travellers: params.travellers || 1,
-        cabin: params.cabin || "economy",
-      },
-    });
+    const origin = params.from || "BLR";
+    const destination = params.to || "DEL";
 
-    return res.data?.flights || res.data?.data || res.data || [];
+    const res = await apiClient.get(
+      "/api/flights/search",
+      {
+        params: {
+          origin,
+          destination,
+          departureDate:
+            params.departure || params.date,
+          adults: params.travellers || 1,
+        },
+      }
+    );
+
+    return (
+      res.data?.data ||
+      res.data?.flights ||
+      []
+    );
+
   } catch (err: any) {
-    console.error("FLIGHT SEARCH ERROR:", err?.response?.data || err.message);
+
+    console.error(
+      "FLIGHT SEARCH ERROR:",
+      err?.response?.data || err.message
+    );
+
     return [];
   }
 }

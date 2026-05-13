@@ -231,7 +231,7 @@ export default function LoginPage() {
       });
 
       router.replace(redirectPath);
-      router.refresh();
+      //router.refresh();
     } catch (error) {
       console.error(error);
       alert("Verification failed");

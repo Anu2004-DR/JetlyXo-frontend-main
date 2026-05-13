@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { getToken } from "@/lib/auth";
 
 /* ---------------- SORT OPTIONS ---------------- */
 
@@ -108,7 +109,7 @@ function normalizeFlight(
   };
 }
 
-/* ---------------- BOOK BUTTON ---------------- */
+
 
 function BookNowButton({
   priceNumber,
@@ -131,27 +132,27 @@ function BookNowButton({
       return;
     }
 
-    const token =
-      localStorage.getItem("jetly_token");
+   
+const token = getToken();
 
-    if (!token) {
+if (!token) {
 
-      localStorage.setItem(
-        "redirectAfterLogin",
-        JSON.stringify({
-          action: "flightPassenger",
-          data: {
-            flightId,
-            priceNumber,
-            airline,
-            duration,
-          },
-        })
-      );
+  router.push(
+    `/login?redirect=${encodeURIComponent(
+      `/flight-passenger?flightId=${flightId}` +
+        `&price=${priceNumber}` +
+        `&airline=${encodeURIComponent(
+          airline
+        )}` +
+        `&duration=${encodeURIComponent(
+          duration
+        )}`
+    )}`
+  );
 
-      router.push("/login");
-      return;
-    }
+  return;
+}
+
 
     const url =
       `/flight-passenger?flightId=${flightId}` +
@@ -177,7 +178,7 @@ function BookNowButton({
   );
 }
 
-/* ---------------- MAIN COMPONENT ---------------- */
+
 
 type FlightResultsProps = {
   flights: RawFlight[];
@@ -258,7 +259,7 @@ export default function FlightResults({
 
   }, [from, to]);
 
-  /* ---------------- NORMALIZED ---------------- */
+  
 
   const normalizedFlights =
     useMemo(() => {
@@ -269,7 +270,7 @@ export default function FlightResults({
 
     }, [flightList]);
 
-  /* ---------------- SORT ---------------- */
+
 
   const sortedFlights =
     useMemo(() => {
@@ -325,8 +326,6 @@ export default function FlightResults({
 
     }, [normalizedFlights, sortBy]);
 
-  /* ---------------- EMPTY STATE ---------------- */
-
   if (!sortedFlights.length) {
 
     return (
@@ -336,7 +335,6 @@ export default function FlightResults({
     );
   }
 
-  /* ---------------- UI ---------------- */
 
   return (
     <div id="results">

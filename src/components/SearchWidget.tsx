@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { MapPin, ArrowRightLeft, X } from "lucide-react";
 import {
   searchFlights,
   type FlightSearchParams,
@@ -31,6 +32,7 @@ export default function SearchWidget({
 }: SearchWidgetProps) {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   const [activeTab, setActiveTab] = useState<Tab>("one-way");
+  const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +42,7 @@ export default function SearchWidget({
   const [returnDate, setReturnDate] = useState("");
   const [travellers, setTravellers] = useState(1);
   const [cabin, setCabin] = useState("economy");
+  const [selectedFare, setSelectedFare] = useState("Regular");
 
   const publishResults = (results: FlightResult[]) => {
     onFlightResults?.(results);
@@ -80,13 +83,13 @@ export default function SearchWidget({
     );
   }, []);
 
-  let isSearching = false;
+  
 
 const handleSearch = async (event?: React.FormEvent) => {
   event?.preventDefault();
 
   if (isSearching) return;
-  isSearching = true;
+  setIsSearching(true);
 
   setError(null);
   setLoading(true);
@@ -106,9 +109,13 @@ const handleSearch = async (event?: React.FormEvent) => {
       from: from || undefined,
       to: to || undefined,
       departure: departure || undefined,
-      return: activeTab !== "one-way" ? returnDate || undefined : undefined,
+      return:
+        activeTab !== "one-way"
+          ? returnDate || undefined
+          : undefined,
       travellers,
       cabin,
+      fareType: selectedFare,
     };
 
     const results = await searchFlights(params);
@@ -131,10 +138,11 @@ const handleSearch = async (event?: React.FormEvent) => {
   } catch (err: any) {
     console.error(err);
     setError(err.message || "Search failed");
-  } finally {
-    setLoading(false);
-    isSearching = false;
   }
+    finally {
+      setLoading(false);
+      setIsSearching(false);
+    }
 };
 
   const handleUseLocation = () => {
@@ -157,137 +165,298 @@ const handleSearch = async (event?: React.FormEvent) => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
         >
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2.5 rounded-xl font-medium ${
-                  activeTab === tab.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-white/10 text-white/70"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+{/* Tabs */}
+<div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+  {TABS.map((tab) => (
+    <button
+      key={tab.id}
+      type="button"
+      onClick={() => setActiveTab(tab.id)}
+      className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
+        activeTab === tab.id
+          ? "bg-blue-600 text-white shadow-lg"
+          : "bg-white/10 text-white/70 hover:bg-white/15"
+      }`}
+    >
+      {tab.label}
+    </button>
+  ))}
+</div>
 
-          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-              <div className="relative">
-                <label className="text-xs text-gray-400">From</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-400">Location</span>
-                  <input
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    placeholder="Enter departure city"
-                    className="input pl-10 pr-10 h-14 text-sm md:text-base focus:ring-2 focus:ring-blue-500"
-                  />
-                  {from && (
-                    <button
-                      type="button"
-                      onClick={() => setFrom("")}
-                      className="absolute right-3 top-3 text-gray-400"
-                    >
-                      X
-                    </button>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleUseLocation}
-                  className="text-xs text-blue-400 mt-1"
-                >
-                  Use current location
-                </button>
-              </div>
+{/* Travel Perks */}
+<div className="mb-8">
+  <div className="flex items-center justify-between mb-4">
+    <h3 className="text-white text-lg font-semibold">
+      Travel Perks
+    </h3>
 
-              <div className="relative">
-                <label className="text-xs text-gray-400">To</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-400">Flight</span>
-                  <input
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                    placeholder="Enter destination"
-                    className="input pl-10 h-14 text-sm md:text-base focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
+    <span className="text-xs px-3 py-1 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-300">
+      ✈ {selectedFare}
+    </span>
+  </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const temp = from;
-                  setFrom(to);
-                  setTo(temp);
-                }}
-                className="absolute left-1/2 top-7 -translate-x-1/2 bg-white text-black shadow-md rounded-full p-2 hover:scale-110 transition"
-              >
-                Swap
-              </button>
-            </div>
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    {[
+      {
+        title: "Regular",
+        icon: "✈️",
+        desc: "Standard fare",
+      },
+      {
+        title: "Student",
+        icon: "🎓",
+        desc: "Extra baggage",
+      },
+      {
+        title: "Defence",
+        icon: "🛡️",
+        desc: "Military fares",
+      },
+      {
+        title: "Business",
+        icon: "💼",
+        desc: "GST benefits",
+      },
+      {
+        title: "Senior",
+        icon: "👴",
+        desc: "Special savings",
+      },
+      {
+        title: "Medical",
+        icon: "🩺",
+        desc: "Healthcare offers",
+      },
+    ].map((fare) => (
+      <button
+        key={fare.title}
+        type="button"
+        onClick={() => setSelectedFare(fare.title)}
+        className={`rounded-2xl border text-left p-3 transition-all duration-300 ${
+          selectedFare === fare.title
+            ? "border-blue-400 bg-gradient-to-br from-blue-600/30 to-indigo-600/20 shadow-lg shadow-blue-500/20 scale-[1.02]"
+            : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-blue-400/40"
+        }`}
+      >
+        <div className="text-xl mb-2">
+          {fare.icon}
+        </div>
 
-            <div className="relative">
-              <label className="text-xs text-gray-400">Departure</label>
-              <input
-                type="date"
-                value={departure}
-                onChange={(e) => setDeparture(e.target.value)}
-                className="input h-14 text-sm md:text-base"
-              />
-            </div>
+        <div className="text-white font-medium text-sm">
+          {fare.title}
+        </div>
 
-            {activeTab !== "one-way" && (
-              <div className="relative">
-                <label className="text-xs text-gray-400">Return</label>
-                <input
-                  type="date"
-                  value={returnDate}
-                  onChange={(e) => setReturnDate(e.target.value)}
-                  className="input h-14 text-sm md:text-base"
-                />
-              </div>
-            )}
+        <div className="text-xs text-gray-400 mt-1">
+          {fare.desc}
+        </div>
+      </button>
+    ))}
+  </div>
+</div>
 
-            <div className="relative">
-              <label className="text-xs text-gray-400">Travellers</label>
-              <select
-                value={travellers}
-                onChange={(e) => setTravellers(Number(e.target.value))}
-                className="input h-14 text-sm md:text-base"
-              >
-                {[1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n}>{n} Traveller</option>
-                ))}
-              </select>
-            </div>
+{/* Search Form */}
+<form
+  onSubmit={handleSearch}
+  className="grid grid-cols-1 md:grid-cols-2 gap-5"
+>
+  {/* FROM + TO */}
+  <div className="md:col-span-2 relative">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-            <div className="relative">
-              <label className="text-xs text-gray-400">Cabin</label>
-              <select
-                value={cabin}
-                onChange={(e) => setCabin(e.target.value)}
-                className="input h-14 text-sm md:text-base"
-              >
-                <option value="economy">Economy</option>
-                <option value="business">Business</option>
-              </select>
-            </div>
-          </form>
+      {/* FROM */}
+      <div>
+        <label className="block text-xs text-gray-400 mb-2">
+          From
+        </label>
 
-          <button
-            onClick={handleSearch}
-            disabled={loading}
-            className="w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 py-4 rounded-xl text-white font-semibold text-base hover:opacity-90 transition shadow-lg"
-          >
-            {loading ? "Searching..." : "Search Flights"}
-          </button>
+        <div className="relative">
+          <MapPin
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
 
-          {error && <p className="text-red-400 mt-3">{error}</p>}
+          <input
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            placeholder="Enter departure city"
+            className="w-full pl-10 pr-10 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          {from && (
+            <button
+              type="button"
+              onClick={() => setFrom("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleUseLocation}
+          className="text-xs text-blue-400 mt-2 hover:text-blue-300"
+        >
+          Use current location
+        </button>
+      </div>
+
+      {/* TO */}
+      <div>
+        <label className="block text-xs text-gray-400 mb-2">
+          To
+        </label>
+
+        <div className="relative">
+          <MapPin
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
+
+          <input
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            placeholder="Enter destination"
+            className="w-full pl-10 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* SWAP BUTTON */}
+    <button
+      type="button"
+      onClick={() => {
+        const temp = from;
+        setFrom(to);
+        setTo(temp);
+      }}
+      className="
+      md:hidden flex justify-center mt-3
+      absolute
+      left-1/2
+      top-[48px]
+      -translate-x-1/2
+      items-center
+      justify-center
+      w-11
+      h-11
+      rounded-full
+      bg-slate-800
+      border
+      border-white/10
+      text-white
+      shadow-lg
+      hover:scale-110
+      transition
+      z-20
+      "
+    >
+      <ArrowRightLeft size={18} />
+    </button>
+  </div>
+
+  {/* DEPARTURE */}
+  <div>
+    <label className="block text-xs text-gray-400 mb-2">
+      Departure
+    </label>
+
+    <input
+      type="date"
+      value={departure}
+      onChange={(e) => setDeparture(e.target.value)}
+      className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+
+  {/* RETURN */}
+  {activeTab !== "one-way" && (
+    <div>
+      <label className="block text-xs text-gray-400 mb-2">
+        Return
+      </label>
+
+      <input
+        type="date"
+        value={returnDate}
+        onChange={(e) => setReturnDate(e.target.value)}
+        className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  )}
+
+  {/* TRAVELLERS */}
+  <div>
+    <label className="block text-xs text-gray-400 mb-2">
+      Travellers
+    </label>
+
+    <select
+      value={travellers}
+      onChange={(e) => setTravellers(Number(e.target.value))}
+      className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <option key={n} value={n}>
+          {n} Traveller{n > 1 ? "s" : ""}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* CABIN */}
+  <div>
+    <label className="block text-xs text-gray-400 mb-2">
+      Cabin
+    </label>
+
+    <select
+      value={cabin}
+      onChange={(e) => setCabin(e.target.value)}
+      className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="economy">Economy</option>
+      <option value="premium-economy">
+        Premium Economy
+      </option>
+      <option value="business">Business</option>
+      <option value="first">First Class</option>
+    </select>
+  </div>
+</form>
+
+{/* Search Button */}
+<button
+  onClick={handleSearch}
+  disabled={loading}
+  className="
+  w-full
+  mt-8
+  py-4
+  rounded-2xl
+  text-white
+  font-semibold
+  text-base
+  bg-gradient-to-r
+  from-blue-500
+  via-indigo-500
+  to-purple-600
+  shadow-lg
+  hover:scale-[1.01]
+  transition-all
+  disabled:opacity-50
+  "
+>
+  {loading ? "Searching..." : "Search Flights"}
+</button>
+
+{error && (
+  <p className="text-red-400 mt-4">
+    {error}
+  </p>
+)}
         </motion.div>
       </div>
     </section>

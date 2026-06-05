@@ -8,6 +8,7 @@ export type FlightSearchParams = {
   return?: string;
   travellers?: number;
   cabin?: string;
+  fareType?: string;
 };
 
 export type FlightResult = {
@@ -163,6 +164,8 @@ export async function searchFlights(
           departureDate:
             params.departure || params.date,
           adults: params.travellers || 1,
+          cabin: params.cabin,
+          fareType: params.fareType,
         },
       }
     );

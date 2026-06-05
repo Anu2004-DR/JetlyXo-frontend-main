@@ -254,59 +254,14 @@ const [openChat, setOpenChat] = useState(false);
         onTrainsClick={handleTrainsClick}
       />
 
-<div className="max-w-5xl mx-auto px-4">
-
-<div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-2xl shadow-xl">
-
-  {/* Tabs */}
-  <div className="flex gap-3 mb-6">
-    <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">One Way</button>
-    <button className="bg-white/10 text-gray-300 px-4 py-2 rounded-lg">Round Trip</button>
-    <button className="bg-white/10 text-gray-300 px-4 py-2 rounded-lg">Multi City</button>
-  </div>
-
-  {/* Form Grid */}
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-    {/* FROM */}
-    <div>
-      <label className="text-sm text-gray-400">From</label>
-      <input
-        type="text"
-        placeholder="City or Airport"
-        className="w-full mt-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-    </div>
-
-    {/* TO */}
-    <div>
-      <label className="text-sm text-gray-400">To</label>
-      <input
-        type="text"
-        placeholder="Destination"
-        className="w-full mt-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-    </div>
-
-    {/* DATE */}
-    <div>
-      <label className="text-sm text-gray-400">Departure</label>
-      <input
-        type="date"
-        className="w-full mt-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-    </div>
-
-  </div>
-
-  {/* BUTTON */}
-  <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold">
-    Search Flights
-  </button>
-
-</div>
-
-</div>
+<SearchWidget
+  onFlightResultsAction={(results) => {
+    setBusResults(null);
+    setTrainResults(null);
+    setFlightResults(results);
+  }}
+  onScrollToResultsAction={scrollToResults}
+/>
 
       <section
         ref={resultsRef}

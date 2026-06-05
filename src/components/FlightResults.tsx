@@ -110,7 +110,6 @@ function normalizeFlight(
 }
 
 
-
 function BookNowButton({
   priceNumber,
   airline,
@@ -171,7 +170,20 @@ if (!token) {
     <button
       type="button"
       onClick={handleClick}
-      className="bg-blue-600 hover:bg-blue-700 transition px-4 py-2 rounded-lg text-white font-medium"
+      className="
+bg-gradient-to-r
+from-blue-600
+to-cyan-500
+hover:scale-105
+transition-all
+duration-300
+px-5
+py-2.5
+rounded-xl
+text-white
+font-semibold
+shadow-lg
+"
     >
       Book Now
     </button>
@@ -184,13 +196,15 @@ type FlightResultsProps = {
   flights: RawFlight[];
   from?: string;
   to?: string;
+  departureDate?: string;
 };
 
 export default function FlightResults({
   flights,
   from = "BLR",
   to = "DEL",
-}: FlightResultsProps) {
+  departureDate,
+}: FlightResultsProps)  {
 
   const API_BASE =
     process.env.NEXT_PUBLIC_API_URL ||
@@ -203,6 +217,24 @@ export default function FlightResults({
 
   const [flightList, setFlightList] =
     useState<RawFlight[]>(flights);
+
+    
+
+    const [filters, setFilters] = useState({
+      nonStop: false,
+      morning: false,
+      evening: false,
+    
+      refundable: false,
+      studentFare: false,
+    
+      airIndia: false,
+      indigo: false,
+    
+      oneStop: false,
+    });
+    
+    const [maxPrice, setMaxPrice] = useState(25000);
 
   /* ---------------- SYNC PROPS ---------------- */
 
@@ -220,7 +252,9 @@ export default function FlightResults({
         `${API_BASE}/api/flights/search` +
           `?origin=${encodeURIComponent(from)}` +
           `&destination=${encodeURIComponent(to)}` +
-          `&departureDate=2026-05-20`
+          `&departureDate=${encodeURIComponent(
+            departureDate || new Date().toISOString().split("T")[0]
+          )}`
       );
 
       if (!res.ok) {
@@ -242,22 +276,20 @@ export default function FlightResults({
         err
       );
     }
+    
   }
 
   useEffect(() => {
-
     refreshFlightSeats();
-
-    const interval =
-      setInterval(
-        refreshFlightSeats,
-        10000
-      );
-
-    return () =>
-      clearInterval(interval);
-
-  }, [from, to]);
+  
+    const interval = setInterval(
+      refreshFlightSeats,
+      10000
+    );
+  
+    return () => clearInterval(interval);
+  
+  }, [from, to, departureDate]);
 
   
 
@@ -271,12 +303,71 @@ export default function FlightResults({
     }, [flightList]);
 
 
+    const filteredFlights = useMemo(() => {
+      let list = [...normalizedFlights];
+    
+      if (filters.nonStop) {
+        list = list.filter((f) =>
+          f.stops.toLowerCase().includes("non")
+        );
+      }
+    
+      if (filters.morning) {
+        list = list.filter((f) => {
+          const hour =
+  parseInt(
+    f.dep?.split(":")[0]
+  ) || 0;
+          return hour < 12;
+        });
+      }
+    
+      if (filters.evening) {
+        list = list.filter((f) => {
+          const hour =
+  parseInt(
+    f.dep?.split(":")[0]
+  ) || 0;
+          return hour >= 18;
+        });
+      }
+    
+      if (filters.indigo || filters.airIndia) {
+        list = list.filter((f) => {
+      
+          const airline =
+            f.airline.toLowerCase();
+      
+          return (
+            (filters.indigo &&
+              airline.includes("indigo")) ||
+      
+            (filters.airIndia &&
+              airline.includes("air india"))
+          );
+        });
+      }
 
+      if (maxPrice > 0) {
+        list = list.filter((f) =>
+          f.priceNumber <= maxPrice
+        );
+      }
+
+      if (filters.oneStop) {
+        list = list.filter(
+          (f) =>
+            f.stops.toLowerCase() ===
+            "1 stop"
+        );
+      }
+      return list;
+    }, [normalizedFlights, filters, maxPrice]);
   const sortedFlights =
     useMemo(() => {
 
       const list = [
-        ...normalizedFlights,
+        ...filteredFlights
       ];
 
       switch (sortBy) {
@@ -324,54 +415,249 @@ export default function FlightResults({
 
       return list;
 
-    }, [normalizedFlights, sortBy]);
+    }, [filteredFlights, sortBy]);
 
-  if (!sortedFlights.length) {
-
-    return (
-      <div className="text-center py-10 text-white">
-        No flights found.
-      </div>
-    );
-  }
-
-
+    if (!sortedFlights.length) {
   return (
-    <div id="results">
+    <div className="glass-card p-8 text-center">
+      <h3 className="text-white text-xl">
+        No flights found
+      </h3>
 
-      {/* SORT OPTIONS */}
+      <p className="text-white/60 mt-2">
+        Try another date or destination.
+      </p>
+    </div>
+  );
+}
 
-      <div className="flex flex-wrap gap-2 mb-6">
+return (
+  <div
+    id="results"
+      className="grid lg:grid-cols-[280px_1fr] gap-6"
+    >
+      
+  
+      {/* LEFT SIDEBAR */}
 
-        {SORT_OPTIONS.map((opt) => (
+<div className="glass-card p-5 h-fit sticky top-24">
 
-          <button
-            key={opt}
-            type="button"
-            onClick={() =>
-              setSortBy(opt)
-            }
-            className={`px-3 py-2 rounded-lg text-sm transition ${
-              sortBy === opt
-                ? "bg-blue-600 text-white"
-                : "bg-white/10 text-white hover:bg-white/20"
-            }`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
+<div className="flex items-center justify-between mb-4">
+  <div>
+    <h3 className="text-white font-semibold text-lg">
+      Filters
+    </h3>
 
-      {/* FLIGHT CARDS */}
+    <p className="text-xs text-white/60">
+      Refine your flight search
+    </p>
+  </div>
 
-      <div className="space-y-4">
+  <button
+    onClick={() => {
+      setFilters({
+        nonStop: false,
+        morning: false,
+        evening: false,
+        refundable: false,
+        studentFare: false,
+        airIndia: false,
+        indigo: false,
+        oneStop: false,
+      });
 
-        {sortedFlights.map(
-          (flight, i) => (
+      setMaxPrice(25000);
+    }}
+    className="text-blue-400 text-sm hover:text-blue-300"
+  >
+    Clear
+  </button>
+</div>
 
+{/* PRICE */}
+
+<div className="mb-6">
+  <h4 className="text-white font-medium mb-3">
+    Price Range
+  </h4>
+
+  <input
+    type="range"
+    min="2000"
+    max="25000"
+    step="500"
+    value={maxPrice}
+    onChange={(e) =>
+      setMaxPrice(Number(e.target.value))
+    }
+    className="w-full"
+  />
+
+  <div className="flex justify-between mt-2 text-sm text-white/70">
+    <span>₹2,000</span>
+    <span>₹{maxPrice.toLocaleString()}</span>
+  </div>
+</div>
+
+{/* STOPS */}
+
+<div className="mb-6">
+  <h4 className="text-white font-medium mb-3">
+    Stops
+  </h4>
+
+  <div className="space-y-3">
+
+    <label className="flex items-center gap-2 text-white">
+      <input
+        type="checkbox"
+        checked={filters.nonStop}
+        onChange={() =>
+          setFilters((prev) => ({
+            ...prev,
+            nonStop: !prev.nonStop,
+          }))
+        }
+      />
+      Non Stop
+    </label>
+
+    <label className="flex items-center gap-2 text-white">
+      <input
+        type="checkbox"
+        checked={filters.oneStop}
+        onChange={() =>
+          setFilters((prev) => ({
+            ...prev,
+            oneStop: !prev.oneStop,
+          }))
+        }
+      />
+      1 Stop
+    </label>
+
+  </div>
+</div>
+
+{/* DEPARTURE */}
+
+<div className="mb-6">
+  <h4 className="text-white font-medium mb-3">
+    Departure Time
+  </h4>
+
+  <div className="grid grid-cols-2 gap-2">
+
+    <button
+      onClick={() =>
+        setFilters((prev) => ({
+          ...prev,
+          morning: !prev.morning,
+        }))
+      }
+      className={`rounded-xl py-2 text-sm transition ${
+        filters.morning
+          ? "bg-blue-600 text-white"
+          : "bg-white/10 text-white"
+      }`}
+    >
+      Morning
+    </button>
+
+    <button
+      onClick={() =>
+        setFilters((prev) => ({
+          ...prev,
+          evening: !prev.evening,
+        }))
+      }
+      className={`rounded-xl py-2 text-sm transition ${
+        filters.evening
+          ? "bg-blue-600 text-white"
+          : "bg-white/10 text-white"
+      }`}
+    >
+      Evening
+    </button>
+
+  </div>
+</div>
+
+{/* AIRLINES */}
+
+<div>
+  <h4 className="text-white font-medium mb-3">
+    Airlines
+  </h4>
+
+  <div className="space-y-3">
+
+    <label className="flex items-center gap-2 text-white">
+      <input
+        type="checkbox"
+        checked={filters.indigo}
+        onChange={() =>
+          setFilters((prev) => ({
+            ...prev,
+            indigo: !prev.indigo,
+          }))
+        }
+      />
+      IndiGo
+    </label>
+
+    <label className="flex items-center gap-2 text-white">
+      <input
+        type="checkbox"
+        checked={filters.airIndia}
+        onChange={() =>
+          setFilters((prev) => ({
+            ...prev,
+            airIndia: !prev.airIndia,
+          }))
+        }
+      />
+      Air India
+    </label>
+
+  </div>
+</div>
+
+
+</div>
+
+
+  
+  
+      
+  
+      {/* RIGHT SECTION */}
+
+<div>
+
+<div className="glass-card p-3 mb-6 flex flex-wrap gap-2">
+
+  {SORT_OPTIONS.map((opt) => (
+    <button
+      key={opt}
+      onClick={() => setSortBy(opt)}
+      className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+        sortBy === opt
+          ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white"
+          : "bg-white/10 text-white hover:bg-white/20"
+      }`}
+    >
+      {opt}
+    </button>
+  ))}
+
+</div>
+
+<div className="space-y-4">
+          {sortedFlights.map((flight, i) => (
             <motion.div
               key={flight.id}
-              className="glass-card p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+              className="glass-card p-6 rounded-2xl border border-white/10 hover:border-cyan-500/30 transition-all duration-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
               initial={{
                 opacity: 0,
                 y: 10,
@@ -384,62 +670,119 @@ export default function FlightResults({
                 delay: i * 0.05,
               }}
             >
-
-              {/* LEFT */}
-
               <div>
 
-                <p className="font-semibold text-white text-lg">
-                  {flight.airline}
-                </p>
 
-                <p className="text-sm text-white/70">
-                  {flight.duration} •{" "}
-                  {flight.stops}
-                </p>
+              <div className="flex items-center gap-3">
+  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
+    ✈️
+  </div>
 
-                <p className="text-sm text-white/50">
-                  Departure:{" "}
-                  {flight.dep}
-                </p>
+  <div>
+    <p className="font-semibold text-lg text-white">
+      {flight.airline}
+    </p>
 
-                <p className="text-sm text-white/50 mt-1">
-                  {flight.seats ===
-                  0
-                    ? "Sold Out ❌"
-                    : `Seats Available: ${
-                        flight.seats ??
-                        "N/A"
-                      }`}
-                </p>
+    <p className="text-xs text-white/50">
+      Economy
+    </p>
+  </div>
+</div>
+<div className="flex gap-2 mt-2">
+
+  {i === 0 && (
+    <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-300 text-xs">
+      Best Value
+    </span>
+  )}
+
+  {sortBy === "Cheapest" && (
+    <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs">
+      Cheapest
+    </span>
+  )}
+
+  {sortBy === "Fastest" && (
+    <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs">
+      Fastest
+    </span>
+  )}
+
+</div>
+
+<div className="flex items-center gap-3 mt-2">
+  <span className="font-semibold text-white">
+    {from}
+  </span>
+
+  <div className="flex-1 border-t border-dashed border-white/20" />
+
+  ✈️
+
+  <div className="flex-1 border-t border-dashed border-white/20" />
+
+  <span className="font-semibold text-white">
+    {to}
+  </span>
+</div>
+
+<div className="flex items-center gap-4 mt-2">
+
+  <span className="text-xl font-semibold text-white">
+    {flight.dep}
+  </span>
+
+  <div className="flex-1 h-px bg-white/20" />
+
+  <span className="text-sm text-white/60">
+    {flight.duration}
+  </span>
+
+</div>
+
+<p className="text-sm text-white/70">
+  {flight.duration} • {flight.stops}
+</p>
+  
+<p
+  className={`text-sm mt-1 ${
+    flight.seats === 0
+      ? "text-red-400"
+      : (flight.seats ?? 99) < 5
+      ? "text-yellow-400"
+      : "text-green-400"
+  }`}
+>
+  {flight.seats === 0
+    ? "Sold Out ❌"
+    : `${flight.seats ?? "N/A"} seats left`}
+</p>
               </div>
-
-              {/* RIGHT */}
-
+  
               <div className="flex items-center gap-4">
 
-                <p className="text-2xl font-bold text-white">
-                  {
-                    flight.priceDisplay
-                  }
-                </p>
+  <div className="text-right">
+    <p className="text-xs text-white/50">
+      Starting from
+    </p>
 
-                <BookNowButton
-                  priceNumber={
-                    flight.priceNumber
-                  }
-                  airline={
-                    flight.airline
-                  }
-                  duration={
-                    flight.duration
-                  }
-                  flightId={flight.id}
-                />
-              </div>
+    <p className="text-3xl font-bold text-white">
+      {flight.priceDisplay}
+    </p>
+  </div>
+
+  <BookNowButton
+    priceNumber={flight.priceNumber}
+    airline={flight.airline}
+    duration={flight.duration}
+    flightId={flight.id}
+  />
+
+</div>
             </motion.div>
-          )
-        )}
+          ))}
+        </div>
+  
       </div>
     </div>
   );

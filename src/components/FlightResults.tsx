@@ -96,9 +96,12 @@ function normalizeFlight(
     duration:
       f?.duration || "N/A",
 
-    stops:
-      f?.stops || "Non-stop",
-
+      stops:
+      typeof f?.stops === "number"
+        ? f.stops === 0
+          ? "Non-stop"
+          : `${f.stops} Stop`
+        : f?.stops || "Non-stop",
     dep:
       f?.dep ||
       f?.departure ||

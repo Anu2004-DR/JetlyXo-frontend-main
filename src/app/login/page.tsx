@@ -13,8 +13,8 @@ export default function LoginPage() {
 
   const redirectPath = searchParams.get("redirect") || "/";
 
-  const [email, setEmail] = useState("");
-  const [step, setStep] = useState<"email" | "otp">("email");
+  const [identifier, setIdentifier] = useState("");
+  const [step, setStep] = useState<"identifier" | "otp">("identifier");
 
   const [otpArray, setOtpArray] = useState([
     "",
@@ -32,6 +32,12 @@ export default function LoginPage() {
   const [canResend, setCanResend] = useState(true);
 
   const [notice, setNotice] = useState("");
+
+  const isEmail = (value: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  
+  const isPhone = (value: string) =>
+    /^[6-9]\d{9}$/.test(value);
 
   /* =========================
      CHECK TOKEN VALIDITY
@@ -90,8 +96,11 @@ export default function LoginPage() {
      SEND OTP
   ========================= */
   const sendOTP = async () => {
-    if (!email.trim()) {
-      alert("Enter your email");
+    if (
+      !isEmail(identifier) &&
+      !isPhone(identifier)
+    ) {
+      alert("Enter a valid email or mobile number");
       return;
     }
 
@@ -103,7 +112,9 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          identifier,
+        }),
       });
 
       const data = await res.json();
@@ -204,7 +215,7 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
+          identifier,
           otp: finalOtp,
         }),
       });
@@ -224,10 +235,16 @@ export default function LoginPage() {
       setToken(data.token);
 
       setUser({
-        email: data.user?.email || email,
+        email:
+          data.user?.email ||
+          (isEmail(identifier)
+            ? identifier
+            : ""),
         name:
           data.user?.name ||
-          email.split("@")[0],
+          (isEmail(identifier)
+            ? identifier.split("@")[0]
+            : identifier),
       });
 
       router.replace(redirectPath);
@@ -269,17 +286,16 @@ export default function LoginPage() {
         </div>
 
         {/* EMAIL STEP */}
-        {step === "email" && (
+        {step === "identifier" && (
           <div className="space-y-4">
             <input
-              type="email"
-              placeholder="Enter Email"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500"
-            />
+  type="text"
+  placeholder="Enter Email or Mobile Number"
+  value={identifier}
+  onChange={(e) => setIdentifier(e.target.value)}
+  className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500"
+/>
+              
 
             <button
               onClick={sendOTP}
@@ -297,12 +313,12 @@ export default function LoginPage() {
         {step === "otp" && (
           <div className="space-y-5">
 
-            <p className="text-center text-sm text-white/70">
-              OTP sent to{" "}
-              <span className="text-white font-medium">
-                {email}
-              </span>
-            </p>
+<p className="text-center text-sm text-white/70">
+  OTP sent to{" "}
+  <span className="text-white font-medium">
+    {identifier}
+  </span>
+</p>
 
             <div
               className="flex justify-between gap-2"
@@ -359,7 +375,7 @@ export default function LoginPage() {
 
             <button
               onClick={() => {
-                setStep("email");
+                setStep("identifier");
                 setOtpArray([
                   "",
                   "",
@@ -371,7 +387,7 @@ export default function LoginPage() {
               }}
               className="w-full border border-white/10 py-3 rounded-xl text-white/70 hover:bg-white/5"
             >
-              Change Email
+              Change Email / Mobile
             </button>
           </div>
         )}

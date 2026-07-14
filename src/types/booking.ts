@@ -1,6 +1,6 @@
-import { Passenger } from "./passenger";
-import { Flight } from "./flight";
 import { Bus } from "./bus";
+import { Flight } from "./flight";
+import { Passenger } from "./passenger";
 import { Train } from "./train";
 
 export type BookingType =
@@ -20,19 +20,19 @@ export interface Booking {
 
   bookingType: BookingType;
 
+  status: BookingStatus;
+
+  totalPrice: number;
+
+  createdAt: string;
+
+  updatedAt?: string;
+
   pnr?: string;
 
   passenger?: Passenger;
 
   passengerName?: string;
-
-  totalPrice: number;
-
-  status: BookingStatus;
-
-  createdAt: string;
-
-  updatedAt?: string;
 
   flight?: Flight | null;
 

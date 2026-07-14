@@ -11,7 +11,12 @@ import {
   useEffect,
 } from "react";
 
-import { createBooking } from "@/lib/api";
+import {
+  searchTrains,
+  createBooking,
+  fetchBookings,
+  verifyPayment,
+} from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 function TrainPassengerPageContent() {

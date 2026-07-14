@@ -4,40 +4,43 @@ import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { getToken } from "@/lib/auth";
+import { searchFlights } from "@/lib/api";
+import { Flight } from "@/types";
+import { useCallback } from "react";
+
 
 /* ---------------- SORT OPTIONS ---------------- */
 
 const SORT_OPTIONS = [
   "Cheapest",
   "Fastest",
-  "Best",
+  "Best", 
   "Departure Time",
   "Airline",
 ] as const;
 
 /* ---------------- TYPES ---------------- */
 
-type RawFlight = {
-  id?: number | string;
-  airline?: string;
-  price?: number | string;
-  duration?: string;
-  stops?: string;
-  dep?: string;
-  departure?: string;
-  departureTime?: string;
-  seats?: number | string;
-};
+
 
 type NormalizedFlight = {
-  id: number;
+  id: string | number;
+
   airline: string;
+
   priceNumber: number;
   priceDisplay: string;
+
   duration: string;
+
   stops: string;
+
   dep: string;
+
   seats: number | null;
+
+  searchId?: string;
+  tId?: string;
 };
 
 /* ---------------- HELPERS ---------------- */
@@ -57,72 +60,58 @@ function parseDuration(duration: string) {
 /* ---------------- NORMALIZE FLIGHT ---------------- */
 
 function normalizeFlight(
-  f: RawFlight,
+  f: Flight,
   index: number
 ): NormalizedFlight {
+  const price = f.price ?? 0;
 
-  const price =
-    typeof f?.price === "number"
-      ? f.price
-      : typeof f?.price === "string"
-      ? Number(
-          f.price.replace(/[₹,$,]/g, "")
-        )
-      : 0;
-
-  const seats =
-    typeof f?.seats === "number"
-      ? f.seats
-      : typeof f?.seats === "string"
-      ? parseInt(f.seats)
-      : null;
+  const seats = f.seats ?? null;
 
   return {
-    id:
-      typeof f?.id === "number"
-        ? f.id
-        : index + 1,
-
-    airline:
-      f?.airline || "Unknown Airline",
-
+    id: f.id ?? index + 1,
+  
+    airline: f.airline || "Unknown Airline",
+  
     priceNumber: price,
-
+  
     priceDisplay:
       price > 0
         ? `₹${price.toLocaleString("en-IN")}`
         : "—",
-
-    duration:
-      f?.duration || "N/A",
-
-      stops:
-      typeof f?.stops === "number"
+  
+    duration: f.duration || "N/A",
+  
+    stops:
+      typeof f.stops === "number"
         ? f.stops === 0
           ? "Non-stop"
-          : `${f.stops} Stop`
-        : f?.stops || "Non-stop",
-    dep:
-      f?.dep ||
-      f?.departure ||
-      f?.departureTime ||
-      "--:--",
-
+          : `${f.stops} S  top`
+        : "Non-stop",
+  
+    dep: f.departure ?? "--:--",
+  
     seats,
+  
+    
+    searchId: f.searchId,
+    tId: f.tId,
   };
 }
-
 
 function BookNowButton({
   priceNumber,
   airline,
   duration,
   flightId,
+  searchId,
+  tId,
 }: {
   priceNumber: number;
   airline: string;
   duration: string;
-  flightId: number;
+  flightId: Flight["id"];
+  searchId?: string;
+  tId?: string;
 }) {
 
   const router = useRouter();
@@ -141,14 +130,12 @@ if (!token) {
 
   router.push(
     `/login?redirect=${encodeURIComponent(
-      `/flight-passenger?flightId=${flightId}` +
-        `&price=${priceNumber}` +
-        `&airline=${encodeURIComponent(
-          airline
-        )}` +
-        `&duration=${encodeURIComponent(
-          duration
-        )}`
+      `/flight-passenger?flightId=${encodeURIComponent(String(flightId))}` +
+        `&searchId=${encodeURIComponent(searchId ?? "")}` +
+        `&tId=${encodeURIComponent(tId ?? "")}` +
+        `&price=${encodeURIComponent(String(priceNumber))}` +
+        `&airline=${encodeURIComponent(airline)}` +
+        `&duration=${encodeURIComponent(duration)}`
     )}`
   );
 
@@ -156,15 +143,13 @@ if (!token) {
 }
 
 
-    const url =
-      `/flight-passenger?flightId=${flightId}` +
-      `&price=${priceNumber}` +
-      `&airline=${encodeURIComponent(
-        airline
-      )}` +
-      `&duration=${encodeURIComponent(
-        duration
-      )}`;
+const url =
+`/flight-passenger?flightId=${encodeURIComponent(String(flightId))}` +
+`&searchId=${encodeURIComponent(searchId ?? "")}` +
+`&tId=${encodeURIComponent(tId ?? "")}` +
+`&price=${encodeURIComponent(String(priceNumber))}` +
+`&airline=${encodeURIComponent(airline)}` +
+`&duration=${encodeURIComponent(duration)}`;
 
     router.push(url);
   };
@@ -196,7 +181,7 @@ shadow-lg
 
 
 type FlightResultsProps = {
-  flights: RawFlight[];
+  flights: Flight[];
   from?: string;
   to?: string;
   departureDate?: string;
@@ -209,9 +194,7 @@ export default function FlightResults({
   departureDate,
 }: FlightResultsProps)  {
 
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:5000";
+
 
   const [sortBy, setSortBy] =
     useState<
@@ -219,7 +202,7 @@ export default function FlightResults({
     >("Cheapest");
 
   const [flightList, setFlightList] =
-    useState<RawFlight[]>(flights);
+      useState<Flight[]>(flights);
 
     
 
@@ -247,40 +230,22 @@ export default function FlightResults({
 
   /* ---------------- REFRESH FLIGHTS ---------------- */
 
-  async function refreshFlightSeats() {
-
+  const refreshFlightSeats = useCallback(async () => {
     try {
-
-      const res = await fetch(
-        `${API_BASE}/api/flights/search` +
-          `?origin=${encodeURIComponent(from)}` +
-          `&destination=${encodeURIComponent(to)}` +
-          `&departureDate=${encodeURIComponent(
-            departureDate || new Date().toISOString().split("T")[0]
-          )}`
-      );
-
-      if (!res.ok) {
-        throw new Error(
-          "Failed to fetch flights"
-        );
-      }
-
-      const data = await res.json();
-
-      if (Array.isArray(data?.data)) {
-        setFlightList(data.data);
-      }
-
-    } catch (err) {
-
-      console.error(
-        "Seat refresh failed:",
-        err
-      );
+      const results = await searchFlights({
+        from,
+        to,
+        departureDate:
+          departureDate ??
+          new Date().toISOString().split("T")[0],
+        travellers: 1,
+      });
+  
+      setFlightList(results);
+    } catch (error) {
+      console.error("Seat refresh failed:", error);
     }
-    
-  }
+  }, [from, to, departureDate]);
 
   useEffect(() => {
     refreshFlightSeats();
@@ -775,11 +740,13 @@ return (
   </div>
 
   <BookNowButton
-    priceNumber={flight.priceNumber}
-    airline={flight.airline}
-    duration={flight.duration}
-    flightId={flight.id}
-  />
+  priceNumber={flight.priceNumber}
+  airline={flight.airline}
+  duration={flight.duration}
+  flightId={flight.id}
+  searchId={flight.searchId}
+  tId={flight.tId}
+/>
 
 </div>
             </motion.div>

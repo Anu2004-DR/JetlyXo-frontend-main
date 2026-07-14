@@ -107,7 +107,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
+      const res = await fetch(`${API_BASE}/auth/send-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -209,7 +209,7 @@ export default function LoginPage() {
     try {
       setVerifying(true);
 
-      const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+      const res = await fetch(`${API_BASE}/auth/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

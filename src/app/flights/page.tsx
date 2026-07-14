@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { searchFlights } from "@/lib/api";
 import { Flight } from "@/types";
+import { getToken } from "@/lib/auth";
+import { ROUTES } from "@/constants/routes";
 
 export default function FlightsPage() {
   const router = useRouter();
@@ -23,7 +25,10 @@ export default function FlightsPage() {
       const data = await searchFlights({
         from,
         to,
-        date,
+        departureDate: date,
+        travellers: 1,
+        children: 0,
+        infants: 0,
       });
 
       console.log("FLIGHTS:", data);
@@ -37,22 +42,22 @@ export default function FlightsPage() {
     }
   };
 
-  function handleBook(flight: Flight) {
-    const token = localStorage.getItem("jetly_token");
+  const handleBook = (flight: Flight) => {
+    const token = getToken();
 
     if (!token) {
       alert("Please login first");
-      router.push("/login");
+      router.push(ROUTES.LOGIN);
       return;
     }
 
     router.push(
       `/flight-passenger?flightId=${flight.id}` +
-        `&price=${encodeURIComponent(flight.price)}` +
+        `&price=${encodeURIComponent(String(flight.price))}` +
         `&airline=${encodeURIComponent(flight.airline)}` +
         `&duration=${encodeURIComponent(flight.duration)}`
     );
-  }
+  };
 
   return (
     <div className="p-6 text-white">
@@ -63,14 +68,18 @@ export default function FlightsPage() {
       <div className="flex flex-wrap gap-3 mb-6">
         <input
           value={from}
-          onChange={(e) => setFrom(e.target.value.toUpperCase())}
+          onChange={(e) =>
+            setFrom(e.target.value.toUpperCase())
+          }
           placeholder="From (BLR)"
           className="bg-slate-800 p-3 rounded-lg"
         />
 
         <input
           value={to}
-          onChange={(e) => setTo(e.target.value.toUpperCase())}
+          onChange={(e) =>
+            setTo(e.target.value.toUpperCase())
+          }
           placeholder="To (DEL)"
           className="bg-slate-800 p-3 rounded-lg"
         />
@@ -118,8 +127,7 @@ export default function FlightsPage() {
             </p>
 
             <p className="text-slate-400">
-              Duration:{" "}
-              {flight.duration}
+              Duration: {flight.duration}
             </p>
 
             <p className="text-2xl font-bold mt-2">

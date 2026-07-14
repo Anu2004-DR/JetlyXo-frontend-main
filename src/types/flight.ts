@@ -1,8 +1,10 @@
 export interface Flight {
-  id: number;
+  // Common
+  id: string | number;
+
+  provider?: "AMADEUS" | "BONTON";
 
   airline: string;
-
   flightNumber?: string;
 
   from?: string;
@@ -18,30 +20,56 @@ export interface Flight {
 
   price: number;
 
+  currency?: string;
+
   seats?: number;
 
   stops?: number;
 
+  refundable?: boolean;
+
+  cabin?: string;
+
+  baggage?: {
+    cabin?: string;
+    checkin?: string;
+  };
+
+  airlineRemarks?: string;
+
+  // Bonton identifiers
+  searchId?: string;
+  traceId?: string;
+  tId?: string;
   searchKey?: string;
 
+  // Existing fields
   createdAt?: string;
-
   cachedAt?: string;
 }
 
+export type TripType = "ONE_WAY" | "ROUND_TRIP";
+
+export type CabinClass =
+  | "ECONOMY"
+  | "PREMIUM_ECONOMY"
+  | "BUSINESS"
+  | "FIRST";
+
 export interface FlightSearchParams {
-  from?: string;
-  to?: string;
-  departure?: string;
-  date?: string;
-  travellers?: number;
-  cabin?: string;
-  fareType?: string;
+  from: string;
+  to: string;
+
+  departureDate: string;
   returnDate?: string;
 
- children?: number;
+  travellers?: number;
+  children?: number;
+  infants?: number;
 
- infants?: number;
+  cabin?: CabinClass;
 
- tripType?: "ONE_WAY" | "ROUND_TRIP";
-} 
+  fareType?: string;
+
+  tripType?: TripType;
+}

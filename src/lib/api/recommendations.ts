@@ -1,3 +1,5 @@
+import { AxiosError } from "axios";
+
 import apiClient from "@/lib/apiClient";
 import { Booking } from "@/types";
 
@@ -23,32 +25,51 @@ export async function fetchRecommendations(
   bookings: Booking[]
 ): Promise<Recommendation[]> {
   try {
-    const res = await apiClient.post("/api/recommendations", {
-      bookings,
-    });
-
-    return res.data?.data || res.data || [];
-  } catch (err: any) {
-    console.error(
-      "RECOMMENDATION ERROR:",
-      err?.response?.data || err.message
+    const response = await apiClient.post(
+      "/recommendations",
+      { bookings }
     );
 
-    return [];
+    return (
+      response.data?.data ??
+      response.data ??
+      []
+    ) as Recommendation[];
+  } catch (error) {
+    const err = error as AxiosError<{
+      message?: string;
+    }>;
+
+    console.error(
+      "Recommendation Error:",
+      err.response?.data || err.message
+    );
+
+    throw new Error(
+      err.response?.data?.message ??
+      "Failed to fetch recommendations"
+    );
   }
 }
 
 export function mapBookingsForAI(
   bookings: Booking[]
 ): AIInputBooking[] {
-  return bookings
-    .map((booking) => {
-      return {
-        source: "",
-        destination: "",
-        price: booking.totalPrice,
-        type: booking.bookingType,
-      };
-    })
-    .filter(Boolean);
+  return bookings.map((booking) => ({
+    source:
+      booking.flight?.from ??
+      booking.bus?.from ??
+      booking.train?.from ??
+      "",
+
+    destination:
+      booking.flight?.to ??
+      booking.bus?.to ??
+      booking.train?.to ??
+      "",
+
+    price: booking.totalPrice,
+
+    type: booking.bookingType,
+  }));
 }

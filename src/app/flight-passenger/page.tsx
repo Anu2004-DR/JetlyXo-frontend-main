@@ -1,90 +1,100 @@
 ﻿"use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
-import { createBooking } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { fareQuote } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 function FlightPassengerPageContent() {
-  const params = useSearchParams();
   const router = useRouter();
+  
+  const params = useSearchParams();
 
-  const flightId = params.get("flightId");
+  const flightId = params.get("flightId") ?? "";
+const searchId = params.get("searchId") ?? "";
+const tId = params.get("tId") ?? "";
+  
+
   const airline = params.get("airline") || "Flight";
   const duration = params.get("duration") || "";
   const price = params.get("price") || "0";
 
-  const [name, setName] = useState("");
+  
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [age, setAge] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [title, setTitle] = useState("Ms");
+  const [dob, setDob] = useState("");
+  const [pan, setPan] = useState("");
+
   const [loading, setLoading] = useState(false);
 
   async function handleContinue() {
     try {
       setLoading(true);
-
-      /* =========================
-         LOGIN CHECK
-      ========================= */
+  
       const token = getToken();
-
+  
       if (!token) {
         alert("Please login first");
         router.push("/login");
         return;
       }
+  
+      // your validations...
+  
+      let did = "";
+      const quote = await fareQuote({
+        id: flightId,
+        searchId,
+        tId,
+      });
+      
+      console.log("QUOTE JSON");
+console.log(JSON.stringify(quote, null, 2));
 
-      /* =========================
-         VALIDATION
-      ========================= */
-      if (!flightId) {
-        alert("Flight info missing");
+console.log("dId =", quote.dId);
+
+did = quote.dId;
+      
+      
+      did = quote.data?.dId;
+      
+      if (!did) {
+        console.error("dId Missing", quote);
+        alert("Booking Detail ID (dId) not received.");
         return;
       }
-
-      if (!name || !age || !phone || !email) {
-        alert("Please fill all details");
-        return;
-      }
-
-      /* =========================
-         BOOKING PAYLOAD
-      ========================= */
-      const payload = {
-        bookingType: "FLIGHT",
-        entityId: Number(flightId),
-
-        passengerName: name,
-        passengerAge: Number(age),
-        passengerPhone: phone,
-        passengerEmail: email,
-      };
-
-      console.log("BOOKING PAYLOAD:", payload);
-
-      /* =========================
-         CREATE BOOKING
-      ========================= */
-      const res = await createBooking(payload);
-
-const bookingId = res.bookingId;
-
-      if (!bookingId) {
-        alert("Booking failed");
-        return;
-      }
-
-      /* =========================
-         GO TO PAYMENT
-      ========================= */
-      router.push(`/payment?bookingId=${bookingId}`);
+  
+      console.log("Booking Detail ID:", did);
+  
+      router.push(
+        `/flight-seat?did=${encodeURIComponent(did)}` +
+          `&flightId=${encodeURIComponent(flightId)}` +
+          `&searchId=${encodeURIComponent(searchId)}` +
+          `&tId=${encodeURIComponent(tId)}` +
+          `&price=${encodeURIComponent(price)}` +
+          `&airline=${encodeURIComponent(airline)}` +
+          `&duration=${encodeURIComponent(duration)}` +
+          `&firstName=${encodeURIComponent(firstName)}` +
+          `&lastName=${encodeURIComponent(lastName)}` +
+          `&age=${encodeURIComponent(age)}` +
+          `&phone=${encodeURIComponent(phone)}` +
+          `&email=${encodeURIComponent(email)}` +
+          `&title=${encodeURIComponent(title)}` +
+          `&dob=${encodeURIComponent(dob)}` +
+          `&pan=${encodeURIComponent(pan)}`
+      );
     } catch (err: any) {
-      console.error("BOOKING ERROR:", err);
+      console.error(err);
+  
       alert(
         err?.response?.data?.message ||
-          err?.message ||
-          "Error creating booking"
+        err?.message ||
+        "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -92,60 +102,102 @@ const bookingId = res.bookingId;
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
-      <div className="bg-slate-800 p-8 rounded-xl w-96 shadow-lg space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+      <div className="bg-slate-800 p-8 rounded-xl shadow-lg w-96 space-y-4">
+
         <h1 className="text-2xl font-bold text-center">
-           Flight Passenger Details
+          Flight Passenger Details
         </h1>
 
         <p>
-          Airline: <span className="font-semibold">{airline}</span>
+          Airline:
+          <span className="font-semibold ml-2">
+            {airline}
+          </span>
         </p>
 
         <p>
-          Duration: <span className="font-semibold">{duration}</span>
+          Duration:
+          <span className="font-semibold ml-2">
+            {duration}
+          </span>
         </p>
 
         <p>
-          Price: <span className="font-semibold">&#8377;{price}</span>
+          Price:
+          <span className="font-semibold ml-2">
+            ₹{price}
+          </span>
         </p>
+        <select
+  className="w-full p-2 rounded bg-slate-700"
+  value={title}
+  onChange={(e) => setTitle(e.target.value)}
+>
+  <option value="Mr">Mr</option>
+  <option value="Ms">Ms</option>
+  <option value="Mrs">Mrs</option>
+</select>
+<input
+  className="w-full p-2 rounded bg-slate-700"
+  placeholder="First Name"
+  value={firstName}
+  onChange={(e) => setFirstName(e.target.value)}
+/>
 
-        <input
-          placeholder="Full Name"
-          className="w-full p-2 rounded bg-slate-700"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+<input
+  className="w-full p-2 rounded bg-slate-700"
+  placeholder="Last Name"
+  value={lastName}
+  onChange={(e) => setLastName(e.target.value)}
+/>
+
+<input
+  type="date"
+  className="w-full p-2 rounded bg-slate-700"
+  value={dob}
+  onChange={(e) => setDob(e.target.value)}
+/>
 
         <input
           type="number"
-          placeholder="Age"
           className="w-full p-2 rounded bg-slate-700"
+          placeholder="Age"
           value={age}
           onChange={(e) => setAge(e.target.value)}
         />
 
         <input
-          placeholder="Phone Number"
           className="w-full p-2 rounded bg-slate-700"
+          placeholder="Phone Number"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
 
         <input
-          placeholder="Email"
           className="w-full p-2 rounded bg-slate-700"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
+<input
+  className="w-full p-2 rounded bg-slate-700"
+  placeholder="PAN Card"
+  value={pan}
+  onChange={(e) => setPan(e.target.value.toUpperCase())}
+/>
+
         <button
           onClick={handleContinue}
           disabled={loading}
-          className="w-full bg-blue-600 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded disabled:opacity-50"
         >
-          {loading ? "Processing..." : "Continue to Payment"}
+          {loading
+            ? "Verifying Fare..."
+            : "Continue to Seat Selection"}
         </button>
+
       </div>
     </div>
   );
@@ -153,10 +205,14 @@ const bookingId = res.bookingId;
 
 export default function FlightPassengerPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+          Loading...
+        </div>
+      }
+    >
       <FlightPassengerPageContent />
     </Suspense>
   );
 }
-
-

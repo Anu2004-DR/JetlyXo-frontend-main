@@ -1,41 +1,74 @@
+import { AxiosError } from "axios";
+
 import apiClient from "@/lib/apiClient";
+
+export interface CreateOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  key?: string;
+  [key: string]: unknown;
+}
+
+export interface VerifyPaymentRequest {
+  bookingId: number | string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
 
 export async function createOrder(
   bookingId: number | string
-) {
+): Promise<CreateOrderResponse> {
   try {
-    const res = await apiClient.post(
-      "/api/payment/create-order",
+    const response = await apiClient.post(
+      "/payment/create-order",
       {
         bookingId,
       }
     );
 
-    return res.data;
-  } catch (err: any) {
+    return response.data;
+  } catch (error) {
+    const err = error as AxiosError<{
+      message?: string;
+    }>;
+
     console.error(
-      "CREATE ORDER ERROR:",
-      err?.response?.data || err.message
+      "Create Order Error:",
+      err.response?.data || err.message
     );
 
-    throw err;
+    throw new Error(
+      err.response?.data?.message ??
+        "Failed to create payment order"
+    );
   }
 }
 
-export async function verifyPayment(data: any) {
+export async function verifyPayment(
+  data: VerifyPaymentRequest
+) {
   try {
-    const res = await apiClient.post(
-      "/api/payment/verify",
+    const response = await apiClient.post(
+      "/payment/verify",
       data
     );
 
-    return res.data;
-  } catch (err: any) {
+    return response.data;
+  } catch (error) {
+    const err = error as AxiosError<{
+      message?: string;
+    }>;
+
     console.error(
-      "VERIFY PAYMENT ERROR:",
-      err?.response?.data || err.message
+      "Verify Payment Error:",
+      err.response?.data || err.message
     );
 
-    throw err;
+    throw new Error(
+      err.response?.data?.message ??
+        "Payment verification failed"
+    );
   }
 }

@@ -1,44 +1,68 @@
+import { AxiosError } from "axios";
+
 import apiClient from "@/lib/apiClient";
 import { Train } from "@/types";
 
-export async function searchTrains(params: {
-  from?: string;
-  to?: string;
-}): Promise<Train[]> {
-  try {
-    if (!params.from || !params.to) {
-      throw new Error("From and To required");
-    }
+export interface TrainSearchParams {
+  from: string;
+  to: string;
+}
 
-    const res = await apiClient.get("/api/trains/search", {
+export async function searchTrains(
+  params: TrainSearchParams
+): Promise<Train[]> {
+  try {
+    const response = await apiClient.get("/trains/search", {
       params: {
         from: params.from,
         to: params.to,
       },
     });
 
-    return (res.data?.data || res.data || []) as Train[];
-  } catch (err: any) {
+    return (
+      response.data?.data ??
+      response.data ??
+      []
+    ) as Train[];
+  } catch (error) {
+    const err = error as AxiosError<{
+      message?: string;
+    }>;
+
     console.error(
-      "TRAIN SEARCH ERROR:",
-      err?.response?.data || err.message
+      "Train Search Error:",
+      err.response?.data || err.message
     );
 
-    return [];
+    throw new Error(
+      err.response?.data?.message ??
+        "Train search failed"
+    );
   }
 }
 
 export async function fetchTrains(): Promise<Train[]> {
   try {
-    const res = await apiClient.get("/api/trains");
+    const response = await apiClient.get("/trains");
 
-    return (res.data?.data || res.data || []) as Train[];
-  } catch (err: any) {
+    return (
+      response.data?.data ??
+      response.data ??
+      []
+    ) as Train[];
+  } catch (error) {
+    const err = error as AxiosError<{
+      message?: string;
+    }>;
+
     console.error(
-      "FETCH TRAINS ERROR:",
-      err?.response?.data || err.message
+      "Fetch Trains Error:",
+      err.response?.data || err.message
     );
 
-    return [];
+    throw new Error(
+      err.response?.data?.message ??
+        "Failed to fetch trains"
+    );
   }
 }

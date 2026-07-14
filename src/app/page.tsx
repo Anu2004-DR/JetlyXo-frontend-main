@@ -83,25 +83,44 @@ const [openChat, setOpenChat] = useState(false);
     setBusResults(null);
     setTrainResults(null);
     setLoadingService("flights");
-  
+    
     try {
-      const results = await searchFlights({});
+      const results = await searchFlights({
+        from: "BLR",
+        to: "HYD",
+        departureDate: "2026-07-10",
+        travellers: 1,
+        children: 0,
+        infants: 0,
+        cabin: "ECONOMY",
+      });
   
-      const formatted = results.map((flight: any) => ({
-        ...flight,
-        id: Number(flight.id),
-  
-        airline: flight.airline ?? flight.carrier ?? "Unknown Airline",
-  
-        from: flight.from ?? flight.fromCity ?? "N/A",
-        to: flight.to ?? flight.toCity ?? "N/A",
-  
-        departureTime: flight.departureTime ?? flight.departure ?? "",
-        arrivalTime: flight.arrivalTime ?? flight.arrival ?? "",
-  
-        price: flight.price ?? 0,
-        seats: flight.seats,
-      }));
+      console.log("Flights returned:", results);
+        
+const formatted = results.map((flight: any) => ({
+  ...flight,
+
+  id: flight.id,
+
+  airline: flight.airline ?? flight.carrier ?? "Unknown Airline",
+
+  from: flight.from ?? flight.fromCity ?? "N/A",
+  to: flight.to ?? flight.toCity ?? "N/A",
+
+  departureTime:
+    flight.departureTime ??
+    flight.departure ??
+    "",
+
+  arrivalTime:
+    flight.arrivalTime ??
+    flight.arrival ??
+    "",
+
+  price: flight.price ?? 0,
+
+  seats: flight.seats,
+}));
   
       setFlightResults(dedupe(formatted));
   
@@ -140,15 +159,29 @@ const [openChat, setOpenChat] = useState(false);
 
       const formatted: Bus[] = results.map((bus: any) => ({
         id: Number(bus.id),
-        busName: bus.busName ?? bus.operator ?? "Unknown Bus",
-
-         fromCity: bus.fromCity ?? bus.from,
-         toCity: bus.toCity ?? bus.to,
-          departure: bus.departure ?? bus.departureTime,
-          arrival: bus.arrival ?? bus.arrivalTime,
-          price: bus.price,
-          seats: bus.seats,
-        }));
+      
+        operator: bus.operator ?? "",
+      
+        busType: bus.busType ?? "",
+      
+        duration: bus.duration ?? "",
+      
+        seatsAvailable: bus.seatsAvailable ?? bus.seats ?? 0,
+      
+        busName: bus.busName ?? bus.operator,
+      
+        fromCity: bus.fromCity,
+      
+        toCity: bus.toCity,
+      
+        departure: bus.departure,
+      
+        arrival: bus.arrival,
+      
+        price: bus.price,
+      
+        seats: bus.seats,
+      }));
   
 
       setBusResults(dedupe(formatted));
@@ -191,17 +224,25 @@ const [openChat, setOpenChat] = useState(false);
 
       const formatted: Train[] = results.map((train: any) => ({
         id: Number(train.id),
-    
-        trainNumber: train.trainNumber ?? train.number ?? "N/A",
-        trainName: train.trainName ?? train.name ?? "Unknown Train",
       
-        fromCity: train.fromCity ?? train.from ?? "N/A",
-        toCity: train.toCity ?? train.to ?? "N/A",
+        trainNumber: train.trainNumber,
       
-        departure: train.departure ?? train.departureTime ?? "",
-        arrival: train.arrival ?? train.arrivalTime ?? "",
+        trainName: train.trainName,
       
-        price: train.price ?? 0,
+        fromCity: train.fromCity,
+      
+        toCity: train.toCity,
+      
+        departure: train.departure,
+      
+        arrival: train.arrival,
+      
+        duration: train.duration ?? "",
+      
+        seatsAvailable: train.seatsAvailable ?? train.seats ?? 0,
+      
+        price: train.price,
+      
         seats: train.seats,
       }));
       setTrainResults(dedupe(formatted));

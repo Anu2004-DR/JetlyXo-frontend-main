@@ -47,46 +47,52 @@ const tId = params.get("tId") ?? "";
       // your validations...
   
       let did = "";
-      const quote = await fareQuote({
-        id: flightId,
-        searchId,
-        tId,
-      });
-      
-      console.log("QUOTE JSON");
-console.log(JSON.stringify(quote, null, 2));
 
-console.log("dId =", quote.dId);
+const quote = await fareQuote({
+  id: flightId,
+  searchId,
+  tId,
+});
 
-did = quote.dId;
-      
-      
-      did = quote.data?.dId;
-      
-      if (!did) {
-        console.error("dId Missing", quote);
-        alert("Booking Detail ID (dId) not received.");
-        return;
-      }
+console.log("QUOTE =", quote);
+console.log("QUOTE JSON =", JSON.stringify(quote, null, 2));
+
+did =
+  quote?.dId ??
+  quote?.data?.dId ??
+  quote?.data?.data?.dId ??
+  "";
+
+console.log("Extracted dId =", did);
+
+if (!did) {
+  console.error("dId Missing:", quote);
+  alert("Booking Detail ID (dId) not received.");
+  return;
+}
   
       console.log("Booking Detail ID:", did);
+      console.log({
+        firstName,
+        lastName,
+      });
   
       router.push(
         `/flight-seat?did=${encodeURIComponent(did)}` +
-          `&flightId=${encodeURIComponent(flightId)}` +
-          `&searchId=${encodeURIComponent(searchId)}` +
-          `&tId=${encodeURIComponent(tId)}` +
-          `&price=${encodeURIComponent(price)}` +
-          `&airline=${encodeURIComponent(airline)}` +
-          `&duration=${encodeURIComponent(duration)}` +
-          `&firstName=${encodeURIComponent(firstName)}` +
-          `&lastName=${encodeURIComponent(lastName)}` +
-          `&age=${encodeURIComponent(age)}` +
-          `&phone=${encodeURIComponent(phone)}` +
-          `&email=${encodeURIComponent(email)}` +
-          `&title=${encodeURIComponent(title)}` +
-          `&dob=${encodeURIComponent(dob)}` +
-          `&pan=${encodeURIComponent(pan)}`
+        `&flightId=${encodeURIComponent(flightId)}` +
+        `&searchId=${encodeURIComponent(searchId)}` +
+        `&tId=${encodeURIComponent(tId)}` +
+        `&price=${encodeURIComponent(price)}` +
+        `&airline=${encodeURIComponent(airline)}` +
+        `&duration=${encodeURIComponent(duration)}` +
+        `&firstName=${encodeURIComponent(firstName)}` +
+        `&lastName=${encodeURIComponent(lastName)}` +
+        `&age=${encodeURIComponent(age)}` +
+        `&phone=${encodeURIComponent(phone)}` +
+        `&email=${encodeURIComponent(email)}` +
+        `&title=${encodeURIComponent(title)}` +
+        `&dob=${encodeURIComponent(dob)}` +
+        `&pan=${encodeURIComponent(pan)}`
       );
     } catch (err: any) {
       console.error(err);

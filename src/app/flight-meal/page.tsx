@@ -19,7 +19,10 @@ function FlightMealPageContent() {
   const duration = params.get("duration") || "";
   const price = params.get("price") || "";
 
-  const name = params.get("name") || "";
+  const firstName = params.get("firstName") || "";
+const lastName = params.get("lastName") || "";
+
+const passengerName = `${firstName} ${lastName}`.trim();
   const age = params.get("age") || "";
   const phone = params.get("phone") || "";
   const email = params.get("email") || "";
@@ -88,7 +91,7 @@ const pan = params.get("pan") || "";
           <p>
             Passenger :
             <span className="font-bold ml-2">
-              {name}
+              {passengerName}
             </span>
           </p>
 
@@ -276,7 +279,8 @@ const pan = params.get("pan") || "";
 
             `&duration=${encodeURIComponent(duration)}` +
 
-            `&name=${encodeURIComponent(name)}` +
+            `&firstName=${encodeURIComponent(firstName)}`+
+             `&lastName=${encodeURIComponent(lastName)}`+
 
             `&age=${encodeURIComponent(age)}` +
 

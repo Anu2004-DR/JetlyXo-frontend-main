@@ -38,10 +38,6 @@ function FlightBookPageContent() {
     try {
       setLoading(true);
 
-      if (!firstName || lastName.trim().length < 2) {
-        alert("Please enter a valid First Name and Last Name.");
-        return;
-      }
 
       const payload = {
         dId: did,
@@ -128,25 +124,20 @@ function FlightBookPageContent() {
       try {
         const booking = await retrieveBooking(bookingCode);
 
-        console.log("========== RETRIEVE RESPONSE ==========");
-        console.log(booking);
-        sessionStorage.setItem(
-          "bookingDetails",
-          JSON.stringify(booking)
-        );
-        router.push(
-          `/booking-success?` +
-            `bookingCode=${encodeURIComponent(bookingCode)}` +
-            `&airline=${encodeURIComponent(airline)}` +
-            `&passenger=${encodeURIComponent(
-              `${firstName} ${lastName}`
-            )}` +
-            `&price=${encodeURIComponent(price)}` +
-            `&seat=${encodeURIComponent(seatNumber)}` +
-            `&meal=${encodeURIComponent(
-              mealName || "No Meal"
-            )}`
-        );
+console.log("========== RETRIEVE RESPONSE ==========");
+console.log(booking);
+console.log(JSON.stringify(booking, null, 2));
+
+sessionStorage.setItem(
+  "bookingDetails",
+  JSON.stringify(booking)
+);
+
+console.log("Saved to sessionStorage");
+console.log(sessionStorage.getItem("bookingDetails"));
+
+router.push("/booking-success");
+        
       } catch (err) {
         console.error("Retrieve Booking Failed:", err);
 
@@ -165,6 +156,21 @@ function FlightBookPageContent() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function confirmBooking() {
+    if (!firstName || lastName.trim().length < 2) {
+      alert("Please enter a valid First Name and Last Name.");
+      return;
+    }
+  
+    const ok = window.confirm(
+      "This action will create a real booking and may deduct funds from the Bonton wallet.\n\nDo you want to continue?"
+    );
+  
+    if (!ok) return;
+  
+    handleBooking();
   }
 
   return (
@@ -212,8 +218,9 @@ function FlightBookPageContent() {
       </div>
 
       <button
-        onClick={handleBooking}
-        disabled={loading}
+  onClick={confirmBooking}
+  disabled={loading}
+
         className="mt-8 bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg disabled:opacity-50"
       >
         {loading ? "Booking..." : "Confirm Booking"}

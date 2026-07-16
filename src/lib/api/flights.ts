@@ -105,3 +105,60 @@ export async function fareQuote(data: {
 
   return response.data.data.data;
 }
+
+
+export async function initiateAmendment(
+  bookingCode: string
+) {
+  const response = await apiClient.get(
+    `/flights/initiate-amendment/${bookingCode}`
+  );
+
+  return response.data.data;
+}
+
+export async function createAmendment(
+  data: any
+) {
+  const response = await apiClient.post(
+    "/flights/create-amendment",
+    data
+  );
+
+  return response.data.data;
+}
+
+export async function amendmentRecord(
+  amendmentId: string
+) {
+  const response = await apiClient.get(
+    `/flights/amendment-record/${amendmentId}`
+  );
+
+  return response.data.data;
+}
+
+export async function acceptAmendment(
+  amendmentId: string
+) {
+  const response = await apiClient.post(
+    `/flights/accept-amendment/${amendmentId}`
+  );
+
+  return response.data.data;
+}
+
+export async function cancelAmendment(
+  amendmentId: string,
+  reason = "reject"
+) {
+  const response = await apiClient.post(
+    `/flights/cancel-amendment/${amendmentId}`,
+    {
+      reason,
+    }
+  );
+
+  return response.data.data;
+}
+

@@ -135,7 +135,7 @@ if (!token) {
         `&tId=${encodeURIComponent(tId ?? "")}` +
         `&price=${encodeURIComponent(String(priceNumber))}` +
         `&airline=${encodeURIComponent(airline)}` +
-        `&duration=${encodeURIComponent(duration)}`
+        `&duration=${encodeURIComponent(duration)}`  
     )}`
   );
 

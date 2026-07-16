@@ -19,7 +19,10 @@ function FlightSeatPageContent() {
   const duration = params.get("duration") || "";
   const price = params.get("price") || "";
 
-  const name = params.get("name") || "";
+  const firstName = params.get("firstName") || "";
+const lastName = params.get("lastName") || "";
+
+const passengerName = `${firstName} ${lastName}`.trim();
   const age = params.get("age") || "";
   const phone = params.get("phone") || "";
   const email = params.get("email") || "";
@@ -38,23 +41,19 @@ function FlightSeatPageContent() {
       try {
         setLoading(true);
 
-        const fullName = name.trim().split(" ");
+        const response = await seatMap({
+          dId: did,
+          pax: [
+            {
+              pid: 1,
+              title,
+              fn: firstName,
+              ln: lastName,
+            },
+          ],
+        });
 
-const firstName = fullName[0] || "Anusha";
-const lastName =
-  fullName.slice(1).join(" ") || "DR";
 
-const response = await seatMap({
-  dId: did,
-  pax: [
-    {
-      pid: 1,
-      title: "Ms",
-      fn: firstName,
-      ln: lastName,
-    },
-  ],
-});
 
         console.log("Seat Map:", response);
 
@@ -96,11 +95,12 @@ const response = await seatMap({
           </p>
 
           <p>
-            Passenger :
-            <span className="font-bold ml-2">
-              {name}
-            </span>
-          </p>
+  Passenger :
+  <span className="font-bold ml-2">
+    {passengerName}
+  </span>
+</p>
+            
 
           <p>
             Duration :
@@ -325,7 +325,8 @@ const response = await seatMap({
         `&price=${encodeURIComponent(price)}` +
         `&airline=${encodeURIComponent(airline)}` +
         `&duration=${encodeURIComponent(duration)}` +
-        `&name=${encodeURIComponent(name)}` +
+        `&firstName=${encodeURIComponent(firstName)}` +
+        `&lastName=${encodeURIComponent(lastName)}` +
         `&age=${encodeURIComponent(age)}` +
         `&phone=${encodeURIComponent(phone)}` +
         `&email=${encodeURIComponent(email)}` +

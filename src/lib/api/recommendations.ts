@@ -22,7 +22,7 @@ export interface AIInputBooking {
 }
 
 export async function fetchRecommendations(
-  bookings: Booking[]
+  bookings: AIInputBooking[]
 ): Promise<Recommendation[]> {
   try {
     const response = await apiClient.post(

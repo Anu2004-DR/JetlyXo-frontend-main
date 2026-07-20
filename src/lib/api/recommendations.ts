@@ -25,10 +25,9 @@ export async function fetchRecommendations(
   bookings: AIInputBooking[]
 ): Promise<Recommendation[]> {
   try {
-    const response = await apiClient.post(
-      "/recommendations",
-      { bookings }
-    );
+    const response = await apiClient.post("/recommendations", {
+      bookings,
+    });
 
     return (
       response.data?.data ??

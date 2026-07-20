@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
+import { useRouter } from "next/navigation";import {
   fetchBookings,
   cancelBooking,
-  Booking,
   fetchRecommendations,
-  Recommendation,
-  mapBookingsForAI
+  mapBookingsForAI,
 } from "@/lib/api";
+
+import type { Booking } from "@/types";
+import type { Recommendation } from "@/lib/api/recommendations";
 
 
 import { getBookingById } from "@/lib/api";

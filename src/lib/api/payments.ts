@@ -72,3 +72,32 @@ export async function verifyPayment(
     );
   }
 }
+
+export async function markPaymentFailed(
+  bookingId: number | string
+) {
+  try {
+    const response = await apiClient.post(
+      "/payment/mark-failed",
+      {
+        bookingId,
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    const err = error as AxiosError<{
+      message?: string;
+    }>;
+
+    console.error(
+      "Mark Payment Failed Error:",
+      err.response?.data || err.message
+    );
+
+    throw new Error(
+      err.response?.data?.message ??
+        "Failed to update payment status"
+    );
+  }
+}

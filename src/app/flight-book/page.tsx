@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { bookFlight, retrieveBooking } from "@/lib/api";
+import { toast } from "sonner";
 
 function FlightBookPageContent() {
   const router = useRouter();
@@ -104,20 +105,21 @@ function FlightBookPageContent() {
       const result = await bookFlight(payload);
 
       if (!result.data?.status) {
-        alert(result.data?.reason || "Booking Failed");
+        toast.error(result.data?.reason || "Booking failed.");
         return;
       }
 
       const bookingCode = result.data?.code;
 
       if (!bookingCode) {
-        alert("Booking code not received.");
+        toast.error("Booking code not received.");
         return;
       }
 
-      alert(
-        `${result.data.reason}\n\nBooking Code: ${bookingCode}`
+      toast.success(
+        `${result.data.reason} (Booking Code: ${bookingCode})`
       );
+      
 
       console.log("Booking Code:", bookingCode);
 
@@ -136,22 +138,26 @@ sessionStorage.setItem(
 console.log("Saved to sessionStorage");
 console.log(sessionStorage.getItem("bookingDetails"));
 
-router.push("/booking-success");
+toast.success("Booking confirmed.");
+
+setTimeout(() => {
+  router.push("/booking-success");
+}, 1200);
         
       } catch (err) {
         console.error("Retrieve Booking Failed:", err);
 
-        alert(
+        toast.warning(
           "Booking confirmed, but failed to retrieve booking details."
         );
       }
     } catch (err: any) {
       console.error(err);
 
-      alert(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Booking Failed"
+      toast.error(
+        err?.response?.data?.message ??
+        err?.message ??
+        "Booking failed."
       );
     } finally {
       setLoading(false);
@@ -160,7 +166,9 @@ router.push("/booking-success");
 
   function confirmBooking() {
     if (!firstName || lastName.trim().length < 2) {
-      alert("Please enter a valid First Name and Last Name.");
+      toast.warning(
+        "Please enter a valid First Name and Last Name."
+      );
       return;
     }
   

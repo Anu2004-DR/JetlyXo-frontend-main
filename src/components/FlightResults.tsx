@@ -7,6 +7,20 @@ import { getToken } from "@/lib/auth";
 import { searchFlights } from "@/lib/api";
 import { Flight } from "@/types";
 import { useCallback } from "react";
+import { toast } from "sonner";
+import Image from "next/image";
+
+const airlineLogos: Record<string, string> = {
+  "IndiGo": "/airlines/indigo.png",
+
+  "Air India": "/airlines/airindia.png",
+
+  "Air India Express": "/airlines/aix.png",
+
+  "Akasa Air": "/airlines/akasa.png",
+
+  "SpiceJet": "/airlines/spicejet.png",
+};
 
 
 /* ---------------- SORT OPTIONS ---------------- */
@@ -14,15 +28,11 @@ import { useCallback } from "react";
 const SORT_OPTIONS = [
   "Cheapest",
   "Fastest",
-  "Best", 
   "Departure Time",
   "Airline",
 ] as const;
 
 /* ---------------- TYPES ---------------- */
-
-
-
 type NormalizedFlight = {
   id: string | number;
 
@@ -38,6 +48,11 @@ type NormalizedFlight = {
   dep: string;
 
   seats: number | null;
+
+  cabin: string;
+  fareType: string;
+
+  badge?: string;
 
   searchId?: string;
   tId?: string;
@@ -85,15 +100,24 @@ function normalizeFlight(
       typeof f.stops === "number"
         ? f.stops === 0
           ? "Non-stop"
-          : `${f.stops} S  top`
+          : `${f.stops} Stop`
         : "Non-stop",
   
     dep: f.departure ?? "--:--",
   
     seats,
   
-    
+    cabin: "Economy",
+  
+    fareType: "Regular Fare",
+  
+    badge:
+      index === 0
+        ? "Best Value"
+        : undefined,
+  
     searchId: f.searchId,
+  
     tId: f.tId,
   };
 }
@@ -119,7 +143,7 @@ function BookNowButton({
   const handleClick = () => {
 
     if (!flightId) {
-      alert("Flight ID missing");
+      toast.error("Flight ID missing");
       return;
     }
 
@@ -173,7 +197,7 @@ font-semibold
 shadow-lg
 "
     >
-      Book Now
+      Book Flight →
     </button>
   );
 }
@@ -206,21 +230,20 @@ export default function FlightResults({
 
     
 
-    const [filters, setFilters] = useState({
-      nonStop: false,
-      morning: false,
-      evening: false,
+      const [filters, setFilters] = useState({
+        nonStop: false,
+        oneStop: false,
+      
+        earlyMorning: false,
+        morning: false,
+        afternoon: false,
+        evening: false,
+      });
+      
+      const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
+      
+      const [maxPrice, setMaxPrice] = useState(25000);
     
-      refundable: false,
-      studentFare: false,
-    
-      airIndia: false,
-      indigo: false,
-    
-      oneStop: false,
-    });
-    
-    const [maxPrice, setMaxPrice] = useState(25000);
 
   /* ---------------- SYNC PROPS ---------------- */
 
@@ -250,17 +273,10 @@ export default function FlightResults({
   useEffect(() => {
     refreshFlightSeats();
   
-    const interval = setInterval(
-      refreshFlightSeats,
-      10000
-    );
+    const interval = setInterval(refreshFlightSeats, 30000);
   
     return () => clearInterval(interval);
-  
-  }, [from, to, departureDate]);
-
-  
-
+  }, [refreshFlightSeats]);
   const normalizedFlights =
     useMemo(() => {
 
@@ -270,67 +286,73 @@ export default function FlightResults({
 
     }, [flightList]);
 
+    const airlines = useMemo(() => {
+      return [...new Set(normalizedFlights.map(f => f.airline))]
+        .filter(Boolean)
+        .sort();
+    }, [normalizedFlights]);
+
 
     const filteredFlights = useMemo(() => {
       let list = [...normalizedFlights];
     
       if (filters.nonStop) {
-        list = list.filter((f) =>
+        list = list.filter(f =>
           f.stops.toLowerCase().includes("non")
         );
       }
     
+      if (filters.oneStop) {
+        list = list.filter(f =>
+          f.stops.toLowerCase().includes("1")
+        );
+      }
+    
+      if (filters.earlyMorning) {
+        list = list.filter(f => {
+          const hour = parseInt(f.dep.split(":")[0]) || 0;
+          return hour >= 0 && hour < 6;
+        });
+      }
+    
       if (filters.morning) {
-        list = list.filter((f) => {
-          const hour =
-  parseInt(
-    f.dep?.split(":")[0]
-  ) || 0;
-          return hour < 12;
+        list = list.filter(f => {
+          const hour = parseInt(f.dep.split(":")[0]) || 0;
+          return hour >= 6 && hour < 12;
+        });
+      }
+    
+      if (filters.afternoon) {
+        list = list.filter(f => {
+          const hour = parseInt(f.dep.split(":")[0]) || 0;
+          return hour >= 12 && hour < 18;
         });
       }
     
       if (filters.evening) {
-        list = list.filter((f) => {
-          const hour =
-  parseInt(
-    f.dep?.split(":")[0]
-  ) || 0;
+        list = list.filter(f => {
+          const hour = parseInt(f.dep.split(":")[0]) || 0;
           return hour >= 18;
         });
       }
     
-      if (filters.indigo || filters.airIndia) {
-        list = list.filter((f) => {
-      
-          const airline =
-            f.airline.toLowerCase();
-      
-          return (
-            (filters.indigo &&
-              airline.includes("indigo")) ||
-      
-            (filters.airIndia &&
-              airline.includes("air india"))
-          );
-        });
-      }
-
-      if (maxPrice > 0) {
-        list = list.filter((f) =>
-          f.priceNumber <= maxPrice
+      if (selectedAirlines.length > 0) {
+        list = list.filter(f =>
+          selectedAirlines.includes(f.airline)
         );
       }
-
-      if (filters.oneStop) {
-        list = list.filter(
-          (f) =>
-            f.stops.toLowerCase() ===
-            "1 stop"
-        );
-      }
+    
+      list = list.filter(f => f.priceNumber <= maxPrice);
+    
       return list;
-    }, [normalizedFlights, filters, maxPrice]);
+    
+    }, [
+      normalizedFlights,
+      filters,
+      selectedAirlines,
+      maxPrice,
+    ]);
+
   const sortedFlights =
     useMemo(() => {
 
@@ -374,11 +396,10 @@ export default function FlightResults({
               b.dep
             )
           );
-          break;
+        
 
-        case "Best":
-        default:
-          break;
+          default:
+            break;
       }
 
       return list;
@@ -404,13 +425,14 @@ return (
     id="results"
       className="grid lg:grid-cols-[280px_1fr] gap-6"
     >
+
       
-  
-      {/* LEFT SIDEBAR */}
+  {/* LEFT SIDEBAR */}
 
-<div className="glass-card p-5 h-fit sticky top-24">
+<div className="glass-card p-5 h-fit sticky top-24 rounded-2xl">
 
-<div className="flex items-center justify-between mb-4">
+<div className="flex items-center justify-between mb-6">
+
   <div>
     <h3 className="text-white font-semibold text-lg">
       Filters
@@ -419,189 +441,219 @@ return (
     <p className="text-xs text-white/60">
       Refine your flight search
     </p>
+    
   </div>
 
   <button
     onClick={() => {
+
       setFilters({
         nonStop: false,
-        morning: false,
-        evening: false,
-        refundable: false,
-        studentFare: false,
-        airIndia: false,
-        indigo: false,
         oneStop: false,
+
+        earlyMorning: false,
+        morning: false,
+        afternoon: false,
+        evening: false,
       });
 
+      setSelectedAirlines([]);
+
       setMaxPrice(25000);
+
     }}
-    className="text-blue-400 text-sm hover:text-blue-300"
+    className="text-cyan-400 text-sm hover:text-cyan-300"
   >
     Clear
   </button>
+
 </div>
 
 {/* PRICE */}
 
-<div className="mb-6">
-  <h4 className="text-white font-medium mb-3">
+<div className="mb-8">
+
+  <h4 className="text-white font-semibold mb-4">
     Price Range
   </h4>
 
   <input
     type="range"
-    min="2000"
-    max="25000"
-    step="500"
+    min={2000}
+    max={25000}
+    step={500}
     value={maxPrice}
     onChange={(e) =>
       setMaxPrice(Number(e.target.value))
     }
-    className="w-full"
+    className="w-full accent-cyan-500"
   />
 
-  <div className="flex justify-between mt-2 text-sm text-white/70">
+  <div className="flex justify-between mt-3 text-sm text-white/60">
+
     <span>₹2,000</span>
-    <span>₹{maxPrice.toLocaleString()}</span>
+
+    <span>
+      ₹{maxPrice.toLocaleString("en-IN")}
+    </span>
+
   </div>
+
 </div>
 
 {/* STOPS */}
 
-<div className="mb-6">
-  <h4 className="text-white font-medium mb-3">
+<div className="mb-8">
+
+  <h4 className="text-white font-semibold mb-4">
     Stops
   </h4>
 
   <div className="space-y-3">
 
-    <label className="flex items-center gap-2 text-white">
+    <label className="flex items-center gap-3 text-white cursor-pointer">
+
       <input
         type="checkbox"
         checked={filters.nonStop}
         onChange={() =>
-          setFilters((prev) => ({
+          setFilters(prev => ({
             ...prev,
             nonStop: !prev.nonStop,
           }))
         }
       />
+
       Non Stop
+
     </label>
 
-    <label className="flex items-center gap-2 text-white">
+    <label className="flex items-center gap-3 text-white cursor-pointer">
+
       <input
         type="checkbox"
         checked={filters.oneStop}
         onChange={() =>
-          setFilters((prev) => ({
+          setFilters(prev => ({
             ...prev,
             oneStop: !prev.oneStop,
           }))
         }
       />
+
       1 Stop
+
     </label>
 
   </div>
+
 </div>
 
 {/* DEPARTURE */}
 
-<div className="mb-6">
-  <h4 className="text-white font-medium mb-3">
+<div className="mb-8">
+
+  <h4 className="text-white font-semibold mb-4">
     Departure Time
   </h4>
 
-  <div className="grid grid-cols-2 gap-2">
+  <div className="space-y-2">
 
-    <button
-      onClick={() =>
-        setFilters((prev) => ({
-          ...prev,
-          morning: !prev.morning,
-        }))
-      }
-      className={`rounded-xl py-2 text-sm transition ${
-        filters.morning
-          ? "bg-blue-600 text-white"
-          : "bg-white/10 text-white"
-      }`}
-    >
-      Morning
-    </button>
+    {[
+      {
+        key: "earlyMorning",
+        label: "Early Morning (00-06)"
+      },
+      {
+        key: "morning",
+        label: "Morning (06-12)"
+      },
+      {
+        key: "afternoon",
+        label: "Afternoon (12-18)"
+      },
+      {
+        key: "evening",
+        label: "Evening (18-24)"
+      },
+    ].map((item) => (
 
-    <button
-      onClick={() =>
-        setFilters((prev) => ({
-          ...prev,
-          evening: !prev.evening,
-        }))
-      }
-      className={`rounded-xl py-2 text-sm transition ${
-        filters.evening
-          ? "bg-blue-600 text-white"
-          : "bg-white/10 text-white"
-      }`}
-    >
-      Evening
-    </button>
+      <label
+        key={item.key}
+        className="flex items-center gap-3 text-white cursor-pointer"
+      >
+
+        <input
+          type="checkbox"
+          checked={filters[item.key as keyof typeof filters]}
+          onChange={() =>
+            setFilters(prev => ({
+              ...prev,
+              [item.key]:
+                !prev[item.key as keyof typeof prev],
+            }))
+          }
+        />
+
+        {item.label}
+
+      </label>
+
+    ))}
 
   </div>
+
 </div>
 
 {/* AIRLINES */}
 
 <div>
-  <h4 className="text-white font-medium mb-3">
+
+  <h4 className="text-white font-semibold mb-4">
     Airlines
   </h4>
 
-  <div className="space-y-3">
+  <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
 
-    <label className="flex items-center gap-2 text-white">
-      <input
-        type="checkbox"
-        checked={filters.indigo}
-        onChange={() =>
-          setFilters((prev) => ({
-            ...prev,
-            indigo: !prev.indigo,
-          }))
-        }
-      />
-      IndiGo
-    </label>
+    {airlines.map((airline) => (
 
-    <label className="flex items-center gap-2 text-white">
-      <input
-        type="checkbox"
-        checked={filters.airIndia}
-        onChange={() =>
-          setFilters((prev) => ({
-            ...prev,
-            airIndia: !prev.airIndia,
-          }))
-        }
-      />
-      Air India
-    </label>
+      <label
+        key={airline}
+        className="flex items-center gap-3 text-white cursor-pointer"
+      >
+
+        <input
+          type="checkbox"
+          checked={selectedAirlines.includes(airline)}
+          onChange={() => {
+
+            setSelectedAirlines(prev =>
+
+              prev.includes(airline)
+
+                ? prev.filter(a => a !== airline)
+
+                : [...prev, airline]
+
+            );
+
+          }}
+        />
+
+        {airline}
+
+      </label>
+
+    ))}
 
   </div>
-</div>
-
 
 </div>
 
+</div>
+  {/* RIGHT SECTION */}
 
-  
-  
-      
-  
-      {/* RIGHT SECTION */}
-
-<div>
+  <div>
 
 <div className="glass-card p-3 mb-6 flex flex-wrap gap-2">
 
@@ -642,25 +694,41 @@ return (
 
 
               <div className="flex items-center gap-3">
-  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-    ✈️
-  </div>
+              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden">
+
+<Image
+  src={airlineLogos[flight.airline] ?? "/airlines/default.png"}
+  alt={flight.airline}
+  width={36}
+  height={36}
+  className="object-contain"
+/>
+
+</div>
 
   <div>
     <p className="font-semibold text-lg text-white">
       {flight.airline}
     </p>
 
-    <p className="text-xs text-white/50">
-      Economy
-    </p>
+    <div className="flex gap-2 mt-2">
+
+  <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs">
+    {flight.cabin}
+  </span>
+
+  <span className="px-2 py-1 rounded-full bg-white/10 text-white/70 text-xs">
+    {flight.fareType}
+  </span>
+
+</div>
   </div>
 </div>
-<div className="flex gap-2 mt-2">
+<div className="flex gap-2 mt-3 flex-wrap">
 
-  {i === 0 && (
+  {flight.badge && (
     <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-300 text-xs">
-      Best Value
+      {flight.badge}
     </span>
   )}
 
@@ -678,20 +746,23 @@ return (
 
 </div>
 
-<div className="flex items-center gap-3 mt-2">
+
+<div className="flex items-center gap-3 mt-4">
+
   <span className="font-semibold text-white">
     {from}
   </span>
 
-  <div className="flex-1 border-t border-dashed border-white/20" />
+  <div className="flex-1 border-t border-dashed border-cyan-500/40" />
 
-  ✈️
+  <span className="text-cyan-300 text-lg">✈</span>
 
-  <div className="flex-1 border-t border-dashed border-white/20" />
+  <div className="flex-1 border-t border-dashed border-cyan-500/40" />
 
   <span className="font-semibold text-white">
     {to}
   </span>
+
 </div>
 
 <div className="flex items-center gap-4 mt-2">
@@ -713,31 +784,45 @@ return (
 </p>
   
 <p
-  className={`text-sm mt-1 ${
+  className={`text-sm mt-2 font-medium ${
     flight.seats === 0
       ? "text-red-400"
-      : (flight.seats ?? 99) < 5
-      ? "text-yellow-400"
+      : (flight.seats ?? 99) <= 4
+      ? "text-red-300"
+      : (flight.seats ?? 99) <= 9
+      ? "text-yellow-300"
       : "text-green-400"
   }`}
 >
-  {flight.seats === 0
-    ? "Sold Out ❌"
-    : `${flight.seats ?? "N/A"} seats left`}
+{flight.seats === 0
+  ? "Sold Out"
+  : (flight.seats ?? 99) <= 4
+  ? `Hurry! Only ${flight.seats} seats left`
+  : (flight.seats ?? 99) <= 9
+  ? `Only ${flight.seats} seats left`
+  : flight.seats != null
+  ? `${flight.seats} Seats Available`
+  : "Seats Available"}
 </p>
               </div>
   
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end gap-3">
 
-  <div className="text-right">
-    <p className="text-xs text-white/50">
-      Starting from
-    </p>
+<div className="text-right">
 
-    <p className="text-3xl font-bold text-white">
-      {flight.priceDisplay}
-    </p>
-  </div>
+<p className="text-xs text-white/40">
+  Per Traveller
+</p>
+
+<p className="text-3xl font-bold text-white">
+  {flight.priceDisplay}
+</p>
+
+<p className="text-xs text-green-300 mt-1">
+  Taxes Included
+</p>
+
+</div>
 
   <BookNowButton
   priceNumber={flight.priceNumber}

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { fareQuote } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { toast } from "sonner";
 
 function FlightPassengerPageContent() {
   const router = useRouter();
@@ -29,6 +30,7 @@ const tId = params.get("tId") ?? "";
   const [title, setTitle] = useState("Ms");
   const [dob, setDob] = useState("");
   const [pan, setPan] = useState("");
+  
 
   const [loading, setLoading] = useState(false);
 
@@ -39,12 +41,36 @@ const tId = params.get("tId") ?? "";
       const token = getToken();
   
       if (!token) {
-        alert("Please login first");
+        toast.warning("Please login first.");
         router.push("/login");
         return;
       }
+
+      if (!firstName.trim() || !lastName.trim()) {
+        toast.warning("Please enter your first and last name.");
+        return;
+      }
+
+      if (!dob) {
+        toast.warning("Please select your date of birth.");
+        return;
+      }
+      
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+        toast.warning("Please enter a valid PAN number.");
+        return;
+      }
+      
+      if (!/^\d{10}$/.test(phone)) {
+        toast.warning("Please enter a valid 10-digit phone number.");
+        return;
+      }
+      
+      if (!/\S+@\S+\.\S+/.test(email)) {
+        toast.warning("Please enter a valid email address.");
+        return;
+      }
   
-      // your validations...
   
       let did = "";
 
@@ -67,9 +93,10 @@ console.log("Extracted dId =", did);
 
 if (!did) {
   console.error("dId Missing:", quote);
-  alert("Booking Detail ID (dId) not received.");
+  toast.error("Booking Detail ID (dId) not received.");
   return;
 }
+
   
       console.log("Booking Detail ID:", did);
       console.log({
@@ -85,8 +112,8 @@ if (!did) {
         `&price=${encodeURIComponent(price)}` +
         `&airline=${encodeURIComponent(airline)}` +
         `&duration=${encodeURIComponent(duration)}` +
-        `&firstName=${encodeURIComponent(firstName)}` +
-        `&lastName=${encodeURIComponent(lastName)}` +
+        `&firstName=${encodeURIComponent(firstName.trim())}` +
+        `&lastName=${encodeURIComponent(lastName.trim())}` +
         `&age=${encodeURIComponent(age)}` +
         `&phone=${encodeURIComponent(phone)}` +
         `&email=${encodeURIComponent(email)}` +
@@ -97,9 +124,9 @@ if (!did) {
     } catch (err: any) {
       console.error(err);
   
-      alert(
-        err?.response?.data?.message ||
-        err?.message ||
+      toast.error(
+        err?.response?.data?.message ??
+        err?.message ??
         "Something went wrong."
       );
     } finally {
@@ -197,7 +224,7 @@ if (!did) {
         <button
           onClick={handleContinue}
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded disabled:opacity-50"
+          className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading
             ? "Verifying Fare..."

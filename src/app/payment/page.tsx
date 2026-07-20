@@ -6,8 +6,9 @@ import {
   createOrder,
   getBookingById,
   verifyPayment,
+  markPaymentFailed,
 } from "@/lib/api";
-
+import { toast } from "sonner";
 declare global {
   interface Window {
     Razorpay?: any;
@@ -107,10 +108,9 @@ function PaymentPageContent() {
         description: `Booking #${bookingId}`,
 
         prefill: {
-          name:
-            booking?.passengerName || "Guest User",
-          email: booking?.email || "",
-          contact: booking?.phone || "",
+          name: booking?.passengerName ?? "Guest User",
+          email: booking?.passengerEmail ?? "",
+          contact: booking?.passengerPhone ?? "",
         },
 
         notes: {
@@ -120,9 +120,15 @@ function PaymentPageContent() {
         modal: {
           escape: true,
           backdropclose: false,
-          ondismiss: () => {
-            setProcessing(false);
-          },
+          ondismiss: async () => {
+        
+            try {
+              await markPaymentFailed(bookingId);
+            } finally {
+              setProcessing(false);
+            }
+        
+          }
         },
 
         theme: {
@@ -136,17 +142,18 @@ function PaymentPageContent() {
               bookingId: Number(bookingId),
             });
 
-            router.push(
-              `/ticket?bookingId=${bookingId}`
-            );
+            toast.success("Payment successful.");
+
+setTimeout(() => {
+  router.push(`/ticket?bookingId=${bookingId}`);
+}, 800);
           } catch (error: any) {
             console.error(error);
 
-            alert(
-              error?.response?.data?.message ||
-                "Payment verification failed"
+            toast.error(
+              error?.response?.data?.message ??
+              "Payment verification failed."
             );
-
             setProcessing(false);
           }
         },
@@ -156,10 +163,10 @@ function PaymentPageContent() {
     } catch (error: any) {
       console.error(error);
 
-      alert(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Payment failed"
+      toast.error(
+        error?.response?.data?.message ??
+        error?.message ??
+        "Payment failed."
       );
 
       setProcessing(false);
@@ -247,6 +254,7 @@ function PaymentPageContent() {
           <button
             onClick={handlePayment}
             disabled={processing}
+            className="... disabled:opacity-60 disabled:cursor-not-allowed"
             className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-semibold transition disabled:opacity-60"
           >
             {processing

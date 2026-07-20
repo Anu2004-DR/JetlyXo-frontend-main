@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+import { Toaster } from "sonner";
 
 import "./globals.css";
 
@@ -45,23 +46,31 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body
-        className={`${inter.className} min-h-screen bg-slate-950 text-white`}
-      >
-        {/* Razorpay */}
-        <Script
-          src="https://checkout.razorpay.com/v1/checkout.js"
-          strategy="lazyOnload"
-        />
+  className={`${inter.className} min-h-screen bg-slate-950 text-white`}
+>
+  {/* Razorpay */}
+  <Script
+    src="https://checkout.razorpay.com/v1/checkout.js"
+    strategy="lazyOnload"
+  />
 
-        {/* Header */}
-        <Header />
+  {/* Toast Notifications */}
+  <Toaster
+    position="top-right"
+    richColors
+    closeButton
+    duration={3000}
+  />
 
-        {/* Main Content */}
-        <main className="min-h-screen">{children}</main>
+  {/* Header */}
+  <Header />
 
-        {/* Footer */}
-        <Footer />
-      </body>
+  {/* Main Content */}
+  <main className="min-h-screen">{children}</main>
+
+  {/* Footer */}
+  <Footer />
+</body>
     </html>
   );
 }

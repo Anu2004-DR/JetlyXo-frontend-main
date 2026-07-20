@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { seatMap } from "@/lib/api";
+import { toast } from "sonner";
 
 function FlightSeatPageContent() {
   const router = useRouter();
@@ -60,69 +61,92 @@ const passengerName = `${firstName} ${lastName}`.trim();
         setSeatResponse(response);
       } catch (err) {
         console.error(err);
-        alert("Unable to load seat map.");
+        toast.error("Unable to load seat map.");
       } finally {
         setLoading(false);
       }
     }
 
-    if (did) {
-      loadSeatMap();
+    if (!did) {
+      toast.error("Booking Detail ID (dId) not found.");
+      router.push("/");
+      return;
     }
+    
+    loadSeatMap();
   }, [did]);
 
   const seatRows =
-    seatResponse?.data?.dtl?.[0]?.smseat || [];
+  seatResponse?.data?.dtl?.[0]?.smseat || [];
 
+const visibleRows = seatRows.filter((row: any[]) =>
+  row.some((seat) => !seat.isempty)
+);
+
+if (!loading && seatRows.length === 0) {
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-8">
+    <div className="min-h-screen flex justify-center items-center text-xl text-gray-300">
+      No seats available for this flight.
+    </div>
+  );
+}
 
-      <h1 className="text-3xl font-bold mb-8">
-        Seat Selection
-      </h1>
+    return (
+      <div className="min-h-screen bg-slate-900 text-white p-8">
+    
+        <h1 className="text-3xl font-bold mb-8">
+          Seat Selection
+        </h1>
 
       {/* Flight Card */}
 
       <div className="bg-slate-800 rounded-xl p-6 mb-8">
 
-        <div className="grid md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 
-          <p>
-            Airline :
-            <span className="font-bold ml-2">
-              {airline}
-            </span>
-          </p>
+<div>
+  <p className="text-gray-400">Airline</p>
+  <p className="font-semibold">{airline}</p>
+</div>
 
-          <p>
-  Passenger :
-  <span className="font-bold ml-2">
-    {passengerName}
-  </span>
-</p>
-            
+<div>
+  <p className="text-gray-400">Passenger</p>
+  <p className="font-semibold">{passengerName}</p>
+</div>
 
-          <p>
-            Duration :
-            <span className="font-bold ml-2">
-              {duration}
-            </span>
-          </p>
+<div>
+  <p className="text-gray-400">Duration</p>
+  <p className="font-semibold">{duration}</p>
+</div>
 
-          <p>
-            Ticket :
-            <span className="font-bold ml-2">
-              ₹{price}
-            </span>
-          </p>
+<div>
+  <p className="text-gray-400">Ticket Fare</p>
+  <p className="font-semibold">₹{price}</p>
+</div>
+
+{selectedSeat && (
+  <>
+    <div>
+      <p className="text-gray-400">Seat Charge</p>
+      <p className="font-semibold">₹{selectedSeat.prc}</p>
+    </div>
+
+    <div>
+      <p className="text-gray-400">Total</p>
+      <p className="font-bold text-green-400">
+        ₹{Number(price) + Number(selectedSeat.prc)}
+      </p>
+    </div>
+  </>
+)}
+
+</div>
 
         </div>
 
-      </div>
-
       {/* Legend */}
 
-      <div className="flex gap-6 mb-8">
+      <div className="flex flex-wrap justify-center gap-6 mb-8">
 
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 bg-green-600 rounded"></div>
@@ -148,13 +172,13 @@ const passengerName = `${firstName} ${lastName}`.trim();
 
       {loading ? (
 
-        <div className="text-xl">
-          Loading Seat Map...
-        </div>
+<div className="flex justify-center items-center py-20">
+  <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-blue-500 rounded-full"></div>
+</div>
 
-      ) : (
+) : (
 
-        <>
+<>
           {/* Cockpit */}
 
           <div className="flex justify-center mb-6">
@@ -167,29 +191,33 @@ const passengerName = `${firstName} ${lastName}`.trim();
 
           {/* Seat Headers */}
 
-          <div className="max-w-xl mx-auto">
+          <div className="max-w-4xl mx-auto">
 
-            <div className="grid grid-cols-7 gap-2 mb-3 text-center font-bold">
+          <div className="grid grid-cols-8 gap-2 mb-3 text-center font-bold">
 
-              <div>A</div>
-              <div>B</div>
-              <div>C</div>
+          <div></div>
+        
+          <div>A</div>
+          <div>B</div>
+          <div>C</div>
+        
+          <div></div>
+        
+          <div>D</div>
+          <div>E</div>
+          <div>F</div>
+        
+        </div>
 
-              <div></div>
-
-              <div>D</div>
-              <div>E</div>
-              <div>F</div>
-
-            </div>
-
-            {seatRows.map((row: any[], rowIndex: number) => (
+            {visibleRows.map((row: any[], rowIndex: number) => (
 
               <div
-                key={rowIndex}
-                className="grid grid-cols-7 gap-2 mb-2"
-              >
-
+  key={rowIndex}
+  className="grid grid-cols-8 gap-2 mb-2 items-center"
+>
+<div className="text-gray-400 font-bold text-center">
+  {row.find((s) => !s.isempty)?.sno?.replace(/[A-Z]/g, "")}
+</div>
                 {row.map((seat: any, index: number) => {
 
                   if (seat.isempty) {
@@ -221,6 +249,7 @@ const passengerName = `${firstName} ${lastName}`.trim();
                       transition-all
                       duration-150
                       hover:scale-105
+                      hover:shadow-lg
                       active:scale-95
                   
                       ${
@@ -255,7 +284,7 @@ const passengerName = `${firstName} ${lastName}`.trim();
 
           {selectedSeat && (
 
-            <div className="mt-10 bg-slate-800 rounded-xl p-6 max-w-md">
+            <div className="mt-10 max-w-md mx-auto bg-slate-800 rounded-xl p-6 shadow-xl">
 
 <h2 className="text-xl font-bold mb-4">
   Selected Seat
@@ -264,14 +293,14 @@ const passengerName = `${firstName} ${lastName}`.trim();
 <div className="space-y-2">
 
   <p>
-    Seat :
+  Seat Number :
     <span className="font-bold ml-2">
       {selectedSeat.sno}
     </span>
   </p>
 
   <p>
-    Seat Charge :
+  Seat Fare :
     <span className="font-bold ml-2">
       ₹{selectedSeat.prc}
     </span>
@@ -280,12 +309,17 @@ const passengerName = `${firstName} ${lastName}`.trim();
   <hr className="border-slate-600" />
 
   <p>
-    Ticket Fare :
+  Base Fare :
     <span className="font-bold ml-2">
       ₹{price}
     </span>
   </p>
-
+  <p>
+  Total Fare :
+  <span className="font-bold text-green-400 ml-2">
+    ₹{Number(price) + Number(selectedSeat.prc)}
+  </span>
+</p>
 </div>
 
             </div>
@@ -298,12 +332,15 @@ const passengerName = `${firstName} ${lastName}`.trim();
 
       {/* Continue */}
 
-      <button
+      <div className="flex justify-center mt-10">
+
+<button
   disabled={!selectedSeat}
   className={`
-    mt-10
-    px-8
-    py-3
+    px-10
+    py-4
+    shadow-lg
+    hover:shadow-blue-500/40
     rounded-lg
     font-semibold
     transition
@@ -341,7 +378,7 @@ const passengerName = `${firstName} ${lastName}`.trim();
 >
   Continue to Meals
 </button>
-
+</div>
     </div>
   );
 }

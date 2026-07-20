@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getToken, setToken, setUser } from "@/lib/auth";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const API_BASE =
@@ -100,7 +101,7 @@ export default function LoginPage() {
       !isEmail(identifier) &&
       !isPhone(identifier)
     ) {
-      alert("Enter a valid email or mobile number");
+      toast.warning("Enter a valid email or mobile number.");
       return;
     }
 
@@ -120,16 +121,17 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Failed to send OTP");
+        toast.error(data.message || "Failed to send OTP.");
         return;
       }
 
       setStep("otp");
       setTimer(60);
       setCanResend(false);
+      toast.success("OTP sent successfully.");
     } catch (error) {
       console.error(error);
-      alert("Unable to send OTP");
+      toast.error("Unable to send OTP.");
     } finally {
       setLoading(false);
     }
@@ -202,7 +204,7 @@ export default function LoginPage() {
     const finalOtp = otpArray.join("");
 
     if (finalOtp.length !== 6) {
-      alert("Enter valid 6 digit OTP");
+      toast.warning("Please enter a valid 6-digit OTP.");
       return;
     }
 
@@ -223,12 +225,12 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "OTP verification failed");
+        toast.error(data.message || "OTP verification failed.");
         return;
       }
 
       if (!data.token) {
-        alert("Invalid token from server");
+        toast.error("Invalid token received from server.");
         return;
       }
 
@@ -251,7 +253,7 @@ export default function LoginPage() {
       //router.refresh();
     } catch (error) {
       console.error(error);
-      alert("Verification failed");
+      toast.error("Verification failed.");
     } finally {
       setVerifying(false);
     }
@@ -292,7 +294,7 @@ export default function LoginPage() {
   type="text"
   placeholder="Enter Email or Mobile Number"
   value={identifier}
-  onChange={(e) => setIdentifier(e.target.value)}
+  onChange={(e) => setIdentifier(e.target.value.trim())}
   className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500"
 />
               

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import {
   initiateAmendment,
@@ -30,6 +31,10 @@ export default function AmendmentPage() {
   const [record, setRecord] =
     useState<any>(null);
 
+  const [creating, setCreating] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
   useEffect(() => {
     loadInitiate();
   }, []);
@@ -43,9 +48,13 @@ export default function AmendmentPage() {
       console.log(res);
 
       setInitiateData(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to initiate amendment.");
+    
+      toast.error(
+        err?.response?.data?.message ??
+        "Failed to initiate amendment."
+      );
     } finally {
       setLoading(false);
     }
@@ -53,12 +62,12 @@ export default function AmendmentPage() {
   
   async function handleCreate() {
     if (!selectedType) {
-      alert("Please select an amendment type.");
+      toast.warning("Please select an amendment type.");
       return;
     }
   
     if (!initiateData?.segs?.length || !initiateData?.trv?.length) {
-      alert("Initiate amendment data not found.");
+      toast.error("Initiate amendment data not found.");
       return;
     }
   
@@ -117,7 +126,7 @@ export default function AmendmentPage() {
       const id = res.data?.code;
   
       if (!id) {
-        alert("Amendment ID not received.");
+        toast.error("Amendment ID not received.");
         return;
       }
   
@@ -130,24 +139,40 @@ export default function AmendmentPage() {
   
       setRecord(quotation);
   
-      alert("Amendment created successfully.");
-    } catch (err) {
+      toast.success("Amendment created successfully.");
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to create amendment.");
+    
+      toast.error(
+        err?.response?.data?.message ??
+        "Failed to create amendment."
+      );
+    }
+    finally {
+      setCreating(false);
     }
   }
   async function handleAccept() {
     try {
       const res = await acceptAmendment(amendmentId);
-
+  
       console.log(res);
-      
-      alert("Amendment accepted successfully.");
-      
-      router.push("/my-bookings");
-    } catch (err) {
+  
+      toast.success("Amendment accepted successfully.");
+  
+      setTimeout(() => {
+        router.push("/my-bookings");
+      }, 1500);
+  
+    } catch (err: any) {
       console.error(err);
-      alert("Accept Failed");
+    
+      toast.error(
+        err?.response?.data?.message ??
+        "Accept failed."
+      );
+    }finally {
+      setAccepting(false);
     }
   }
 
@@ -157,13 +182,21 @@ export default function AmendmentPage() {
         amendmentId,
         "User Cancelled"
       );
-
-      alert("Amendment Cancelled");
-
-      router.push("/booking-success");
-    } catch (err) {
+  
+      toast.success("Amendment cancelled successfully.");
+  
+      setTimeout(() => {
+        router.push("/my-bookings");
+      }, 1500);  
+    } catch (err: any) {
       console.error(err);
-      alert("Cancel Failed");
+    
+      toast.error(
+        err?.response?.data?.message ??
+        "Cancellation failed."
+      );
+    }finally {
+      setCancelling(false);
     }
   }
 
@@ -228,11 +261,12 @@ export default function AmendmentPage() {
           </div>
 
           <button
-            onClick={handleCreate}
-            className="mt-8 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl"
-          >
-            Create Amendment
-          </button>
+  onClick={handleCreate}
+  disabled={creating}
+  className="mt-8 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-xl"
+>
+  {creating ? "Creating..." : "Create Amendment"}
+</button>
 
         </div>
 
@@ -270,20 +304,21 @@ export default function AmendmentPage() {
 
             <div className="flex gap-4 mt-8">
 
-              <button
-                onClick={handleAccept}
-                className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl"
-              >
-                Accept Amendment
-              </button>
+            <button
+  onClick={handleAccept}
+  disabled={accepting}
+  className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-xl"
+>
+  {accepting ? "Accepting..." : "Accept Amendment"}
+</button>
 
-              <button
-                onClick={handleCancel}
-                className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-xl"
-              >
-                Cancel Amendment
-              </button>
-
+<button
+  onClick={handleCancel}
+  disabled={cancelling}
+  className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-xl"
+>
+  {cancelling ? "Cancelling..." : "Cancel Amendment"}
+</button>
             </div>
 
           </div>

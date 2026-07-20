@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 import { meal } from "@/lib/api";
 
@@ -52,7 +53,7 @@ const pan = params.get("pan") || "";
         setMealResponse(response);
       } catch (err) {
         console.error(err);
-        alert("Unable to load meals.");
+        toast.error("Unable to load meals.");
       } finally {
         setLoading(false);
       }

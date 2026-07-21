@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-
+import { Suspense } from "react";
 import {
   initiateAmendment,
   createAmendment,
@@ -11,8 +11,7 @@ import {
   acceptAmendment,
   cancelAmendment,
 } from "@/lib/api";
-
-export default function AmendmentPage() {
+function AmendmentPageContent() {
   const params = useSearchParams();
   const router = useRouter();
 
@@ -328,5 +327,18 @@ export default function AmendmentPage() {
       </div>
 
     </div>
+  );
+}
+export default function AmendmentPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex justify-center items-center text-white bg-slate-900">
+          Loading...
+        </div>
+      }
+    >
+      <AmendmentPageContent />
+    </Suspense>
   );
 }

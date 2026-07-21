@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getToken, setToken, setUser } from "@/lib/auth";
 import { toast } from "sonner";
-
-export default function LoginPage() {
+import { Suspense } from "react";
+function LoginPageContent() {
   const API_BASE =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -397,3 +397,17 @@ export default function LoginPage() {
     </div>
   );
 }
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+          Loading...
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+  

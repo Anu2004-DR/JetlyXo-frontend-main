@@ -49,12 +49,7 @@ function normalizeBus(bus: Bus, index: number) {
         ? `₹${bus.price.toLocaleString("en-IN")}`
         : "—",
 
-    seats:
-      typeof bus?.seats === "number"
-        ? bus.seats
-        : typeof bus?.seats === "string"
-        ? parseInt(bus.seats)
-        : null,
+    seats: bus.seatsAvailable ?? bus.availableSeats ?? 0,
   };
 }
 

@@ -56,16 +56,16 @@ export function mapBookingsForAI(
 ): AIInputBooking[] {
   return bookings.map((booking) => ({
     source:
-      booking.flight?.from ??
-      booking.bus?.from ??
-      booking.train?.from ??
-      "",
+  booking.flight?.from ??
+  booking.bus?.fromCity ??
+  booking.train?.fromCity ??
+  "",
 
-    destination:
-      booking.flight?.to ??
-      booking.bus?.to ??
-      booking.train?.to ??
-      "",
+  destination:
+  booking.flight?.to ??
+  booking.bus?.toCity ??
+  booking.train?.toCity ??
+  "",
 
     price: booking.totalPrice,
 

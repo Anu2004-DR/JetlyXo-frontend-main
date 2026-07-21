@@ -13,6 +13,7 @@ function ResultsPageContent() {
 
   const from = params.get("from") || "";
   const to = params.get("to") || "";
+  const departureDate = params.get("departureDate") || "";
 
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +26,17 @@ function ResultsPageContent() {
         let data: any[] = [];
 
         if (type === "flight") {
-          data = await searchFlights({ from, to });
+          data = await searchFlights({
+            from,
+            to,
+            departureDate,
+            travellers: 1,
+            children: 0,
+            infants: 0,
+            cabin: "ECONOMY",
+            fareType: "Regular",
+            tripType: "ONE_WAY",
+          });
         } else if (type === "bus") {
           data = await searchBuses({ from, to });
         } else {

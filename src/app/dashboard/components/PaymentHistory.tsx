@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { fetchBookings, type Booking } from "@/lib/api";
+import { fetchBookings } from "@/lib/api";
+import type { Booking } from "@/types";
 
 export default function PaymentHistory() {
   const [payments, setPayments] = useState<Booking[]>([]);

@@ -286,12 +286,13 @@ export default function FlightResults({
 
     }, [flightList]);
 
-    const airlines = useMemo(() => {
-      return [...new Set(normalizedFlights.map(f => f.airline))]
-        .filter(Boolean)
-        .sort();
-    }, [normalizedFlights]);
-
+    const airlines = useMemo(
+      () =>
+        Array.from(new Set(normalizedFlights.map((f) => f.airline)))
+          .filter(Boolean)
+          .sort(),
+      [normalizedFlights]
+    );
 
     const filteredFlights = useMemo(() => {
       let list = [...normalizedFlights];

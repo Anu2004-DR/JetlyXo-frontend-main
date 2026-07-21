@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { cancelBooking, fetchBookings, type Booking } from "@/lib/api";
+import { cancelBooking, fetchBookings } from "@/lib/api";
+import type { Booking } from "@/types";
 
 export default function BookingHistory() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -54,13 +55,13 @@ export default function BookingHistory() {
           booking.bus?.fromCity ||
           booking.train?.fromCity ||
           booking.flight?.fromCity ||
-          booking.flightData?.from ||
+          booking.flight?.from ||
           "N/A";
         const to =
           booking.bus?.toCity ||
           booking.train?.toCity ||
           booking.flight?.toCity ||
-          booking.flightData?.to ||
+          booking.flight?.to ||
           "N/A";
 
         return (

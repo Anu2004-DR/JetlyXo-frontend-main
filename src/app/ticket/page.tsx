@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { getBookingById } from "@/lib/api";
+import type { Booking } from "@/types";
 import {
   Bus,
   Plane,
@@ -15,14 +16,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-type Booking = {
-  id: number;
-  pnr: string;
-  passengerName: string;
-  bookingType: "BUS" | "TRAIN" | "FLIGHT";
-  totalPrice: number;
-  status: string;
-};
+
 
 function TicketPageContent() {
   const params = useSearchParams();
@@ -38,7 +32,7 @@ function TicketPageContent() {
     const loadBooking = async () => {
       try {
         const res = await getBookingById(Number(bookingId));
-        setBooking(res.data);
+        setBooking(res);
       } catch (error) {
         router.push("/my-bookings");
       } finally {
@@ -53,11 +47,11 @@ function TicketPageContent() {
     if (!booking) return <Ticket size={22} />;
 
     switch (booking.bookingType) {
-      case "BUS":
+      case "bus":
         return <Bus size={22} />;
-      case "TRAIN":
+      case "train":
         return <Train size={22} />;
-      case "FLIGHT":
+      case "flight":
         return <Plane size={22} />;
       default:
         return <Ticket size={22} />;
@@ -89,7 +83,7 @@ function TicketPageContent() {
     doc.text("Travel smarter. Travel faster.", 18, 33);
 
     doc.setFontSize(10);
-    doc.text(`PNR: ${booking.pnr}`, 150, 24);
+    doc.text(`PNR: ${booking.pnr ?? "-"}`, 150, 24);
     doc.text("STATUS: CONFIRMED", 135, 33);
 
     // Reset text
@@ -100,7 +94,7 @@ function TicketPageContent() {
     doc.text("Passenger Name", 18, 65);
 
     doc.setFontSize(18);
-    doc.text(booking.passengerName, 18, 74);
+    doc.text(booking.passengerName ?? "Guest", 18, 74);
 
     // Journey
     doc.setFontSize(11);
@@ -142,11 +136,11 @@ function TicketPageContent() {
 
     // QR Code
     /*const qr = await QRCode.toDataURL(
-      `JETLY|PNR:${booking.pnr}|BOOKING:${booking.id}`
+      `JETLY|PNR:${booking.pnr ?? "-"}|BOOKING:${booking.id}`
     );*/
    
 
-    const verifyUrl = `${window.location.origin}/verify/${booking.pnr}`;
+    const verifyUrl = `${window.location.origin}/verify/${booking.pnr ?? "-"}`;
 
 const qr = await QRCode.toDataURL(verifyUrl, {
   width: 300,
@@ -214,7 +208,7 @@ doc.addImage(qr, "PNG", 65, 188, 80, 80);
 
             <div className="text-right">
               <p className="text-sm opacity-80">PNR</p>
-              <p className="font-bold text-xl">{booking.pnr}</p>
+              <p className="font-bold text-xl">{booking.pnr ?? "-"}</p>
             </div>
           </div>
         </div>

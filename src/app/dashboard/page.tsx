@@ -10,7 +10,8 @@ import BusResults from "@/components/BusResults";
 import TrendingDestinations from "@/components/TrendingDestinations";
 import Deals from "@/components/Deals";
 import Features from "@/components/Features";
-import { fetchBuses, fetchTrains, type FlightResult } from "@/lib/api";
+import { fetchBuses, fetchTrains } from "@/lib/api";
+import type { Flight } from "@/types";
 import type { Bus as BusUI } from "@/types/bus";
 
 import DashboardSidebar from "./components/DashboardSidebar";
@@ -45,7 +46,7 @@ export default function Page() {
 
   const [mode, setMode] = useState<SearchMode>("flights");
 
-  const [flightResults, setFlightResults] = useState<FlightResult[] | null>(null);
+  const [flightResults, setFlightResults] = useState<Flight[] | null>(null);
   const [trainResults, setTrainResults] = useState<TrainUI[] | null>(null);
   const [busResults, setBusResults] = useState<BusUI[] | null>(null);
 
@@ -110,7 +111,7 @@ export default function Page() {
     try {
       const buses = await fetchBuses();
 
-      const adapted: BusUI[] = buses.map((b: any, idx: number) => ({
+      const adapted: any[] = buses.map((b: any, idx: number) => ({
         id: Number(b.id ?? idx),
         busName: String(b.busName ?? b.operator ?? "Bus"),
         fromCity: String(b.fromCity ?? b.from ?? "N/A"),

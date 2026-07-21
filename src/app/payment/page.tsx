@@ -40,7 +40,7 @@ function PaymentPageContent() {
     const loadBooking = async () => {
       try {
         const res = await getBookingById(Number(bookingId));
-        setBooking(res?.data || res || null);
+        setBooking(res ?? null);
       } catch (error) {
         console.error("Failed to load booking:", error);
         setBooking(null);
@@ -79,10 +79,7 @@ function PaymentPageContent() {
         Number(bookingId)
       );
 
-      const order =
-        orderResponse?.order ||
-        orderResponse?.data?.order ||
-        orderResponse;
+      const order = orderResponse as any;
 
       if (!order?.id) {
         throw new Error("Order creation failed");
@@ -254,8 +251,7 @@ setTimeout(() => {
           <button
             onClick={handlePayment}
             disabled={processing}
-            className="... disabled:opacity-60 disabled:cursor-not-allowed"
-            className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-semibold transition disabled:opacity-60"
+            className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {processing
               ? "Opening payment..."

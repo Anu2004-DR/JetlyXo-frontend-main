@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DashboardSection from "./DashboardSection";
-import { fetchBookings, type Booking } from "@/lib/api";
+import { fetchBookings } from "@/lib/api";
+import type { Booking } from "@/types";
 
 function TripsSkeleton() {
   return (

@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { bookFlight, retrieveBooking } from "@/lib/api";
+import { createBooking } from "@/lib/api";
 import { toast } from "sonner";
 
 function FlightBookPageContent() {
@@ -24,7 +24,7 @@ function FlightBookPageContent() {
   const title = params.get("title") || "Ms";
   const dob = params.get("dob") || "";
   const pan = params.get("pan") || "";
-
+  const age = params.get("age") || "";
   const seatCode = params.get("seatCode") || "";
   const seatNumber = params.get("seatNumber") || "";
   const seatPrice = params.get("seatPrice") || "0";
@@ -37,7 +37,12 @@ function FlightBookPageContent() {
 
   async function handleBooking() {
     try {
-      setLoading(true);
+      setLoading(true);   
+      
+      const totalPrice =
+      Number(price) +
+      Number(seatPrice || 0) +
+      Number(mealPrice || 0);
 
 
       const payload = {
@@ -97,60 +102,35 @@ function FlightBookPageContent() {
         email,
         cno: phone,
         cc: "+91",
+        totalPrice,
       };
+
+      
 
       console.log("========== BOOK PAYLOAD ==========");
       console.log(payload);
 
-      const result = await bookFlight(payload);
-
-      if (!result.data?.status) {
-        toast.error(result.data?.reason || "Booking failed.");
-        return;
-      }
-
-      const bookingCode = result.data?.code;
-
-      if (!bookingCode) {
-        toast.error("Booking code not received.");
-        return;
-      }
-
-      toast.success(
-        `${result.data.reason} (Booking Code: ${bookingCode})`
-      );
+      const booking = await createBooking({
+        bookingType: "FLIGHT",
       
-
-      console.log("Booking Code:", bookingCode);
-
-      try {
-        const booking = await retrieveBooking(bookingCode);
-
-console.log("========== RETRIEVE RESPONSE ==========");
-console.log(booking);
-console.log(JSON.stringify(booking, null, 2));
-
-sessionStorage.setItem(
-  "bookingDetails",
-  JSON.stringify(booking)
-);
-
-console.log("Saved to sessionStorage");
-console.log(sessionStorage.getItem("bookingDetails"));
-
-toast.success("Booking confirmed.");
-
-setTimeout(() => {
-  router.push("/booking-success");
-}, 1200);
-        
-      } catch (err) {
-        console.error("Retrieve Booking Failed:", err);
-
-        toast.warning(
-          "Booking confirmed, but failed to retrieve booking details."
-        );
-      }
+        passengerName: `${title} ${firstName} ${lastName}`,
+      
+        passengerAge: Number(age),
+      
+        passengerPhone: phone,
+        passengerEmail: email,
+      
+        totalPrice: Number(price),
+      
+        bontonPayload: payload,
+      });
+      
+      toast.success("Booking created. Proceed to payment.");
+      
+      setTimeout(() => {
+        router.push(`/payment?bookingId=${booking.bookingId}`);
+      }, 800);
+     
     } catch (err: any) {
       console.error(err);
 
@@ -173,7 +153,7 @@ setTimeout(() => {
     }
   
     const ok = window.confirm(
-      "This action will create a real booking and may deduct funds from the Bonton wallet.\n\nDo you want to continue?"
+      "You will be redirected to the secure Razorpay payment page. Your flight will be booked only after successful payment.\n\nContinue?"
     );
   
     if (!ok) return;

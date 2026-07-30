@@ -8,10 +8,7 @@ import {
   verifyPayment,
   markPaymentFailed,
 } from "@/lib/api";
-router.post(
-  "/mark-failed",
-  authMiddleware,
-);
+
 import { toast } from "sonner";
 declare global {
   interface Window {

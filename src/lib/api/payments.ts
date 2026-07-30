@@ -2,12 +2,16 @@ import { AxiosError } from "axios";
 
 import apiClient from "@/lib/apiClient";
 
-export interface CreateOrderResponse {
-  orderId: string;
+export interface RazorpayOrder {
+  id: string;
   amount: number;
   currency: string;
-  key?: string;
-  [key: string]: unknown;
+  receipt?: string;
+}
+
+export interface CreateOrderResponse {
+  success: boolean;
+  order: RazorpayOrder;
 }
 
 export interface VerifyPaymentRequest {
@@ -44,7 +48,7 @@ export async function createOrder(
         "Failed to create payment order"
     );
   }
-}
+} 
 
 export async function verifyPayment(
   data: VerifyPaymentRequest

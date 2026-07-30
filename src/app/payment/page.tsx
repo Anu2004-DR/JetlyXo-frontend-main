@@ -8,6 +8,10 @@ import {
   verifyPayment,
   markPaymentFailed,
 } from "@/lib/api";
+router.post(
+  "/mark-failed",
+  authMiddleware,
+);
 import { toast } from "sonner";
 declare global {
   interface Window {
@@ -28,27 +32,43 @@ function PaymentPageContent() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
-  /* =========================
-     LOAD BOOKING
-  ========================= */
+  useEffect(() => {
+    if (document.getElementById("razorpay-sdk")) return;
+  
+    const script = document.createElement("script");
+  
+    script.id = "razorpay-sdk";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+  
+    document.body.appendChild(script);
+  
+    return () => {
+      script.remove();
+    };
+  }, []);
+
   useEffect(() => {
     if (!bookingId) {
       setLoading(false);
       return;
     }
-
+  
     const loadBooking = async () => {
       try {
-        const res = await getBookingById(Number(bookingId));
+        const res = await getBookingById(
+          Number(bookingId)
+        );
+  
         setBooking(res ?? null);
-      } catch (error) {
-        console.error("Failed to load booking:", error);
+      } catch (err) {
+        console.error(err);
         setBooking(null);
       } finally {
         setLoading(false);
       }
     };
-
+  
     loadBooking();
   }, [bookingId]);
 
@@ -75,15 +95,13 @@ function PaymentPageContent() {
       setProcessing(true);
 
       /* Create Razorpay Order */
-      const orderResponse = await createOrder(
+      const { order } = await createOrder(
         Number(bookingId)
-      );
-
-      const order = orderResponse as any;
-
-      if (!order?.id) {
+    );
+    
+    if (!order?.id) {
         throw new Error("Order creation failed");
-      }
+    }
 
       if (!window.Razorpay) {
         throw new Error(
@@ -94,8 +112,7 @@ function PaymentPageContent() {
       const razorpay = new window.Razorpay({
         key:
           process.env
-            .NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-          "rzp_test_SaDtavZFKoFDmK",
+            .NEXT_PUBLIC_RAZORPAY_KEY_ID ,
 
         amount: order.amount,
         currency: order.currency || "INR",
@@ -145,14 +162,20 @@ setTimeout(() => {
   router.push(`/ticket?bookingId=${bookingId}`);
 }, 800);
           } catch (error: any) {
-            console.error(error);
 
-            toast.error(
-              error?.response?.data?.message ??
-              "Payment verification failed."
+            console.error(error);
+        
+            await markPaymentFailed(
+                Number(bookingId)
             );
+        
+            toast.error(
+                error.message ??
+                "Payment verification failed."
+            );
+        
             setProcessing(false);
-          }
+        }
         },
       });
 
@@ -211,6 +234,7 @@ setTimeout(() => {
             Complete Payment
           </h1>
         </div>
+        
 
         {/* Booking Card */}
         <div className="bg-slate-800 border border-white/10 rounded-xl p-4 space-y-3 text-sm sm:text-base">
@@ -272,9 +296,8 @@ setTimeout(() => {
       </div>
     </div>
   );
-}
 
-/* =========================
+}/* =========================
    REUSABLE ROW
 ========================= */
 function Row({

@@ -270,13 +270,6 @@ export default function FlightResults({
     }
   }, [from, to, departureDate]);
 
-  useEffect(() => {
-    refreshFlightSeats();
-  
-    const interval = setInterval(refreshFlightSeats, 30000);
-  
-    return () => clearInterval(interval);
-  }, [refreshFlightSeats]);
   const normalizedFlights =
     useMemo(() => {
 

@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 
 import { searchFlights,searchBuses, searchTrains } from "@/lib/api";
 
+
 export default function Home() {
   
   const router = useRouter();
@@ -32,7 +33,10 @@ export default function Home() {
   const resultsRef = useRef<HTMLDivElement>(null);
   const [flightResults, setFlightResults] = useState<any[] | null>(null);
 
-
+  useEffect(() => {
+    console.log("flightResults changed:", flightResults);
+  }, [flightResults]);
+  
   const [busResults, setBusResults] = useState<Bus[] | null>(null);
   const [trainResults, setTrainResults] = useState<Train[] | null>(null);
 
@@ -297,6 +301,8 @@ const formatted = results.map((flight: any) => ({
 
 <SearchWidget
   onFlightResultsAction={(results) => {
+    console.log("HOME RECEIVED:", results.length, results);
+  
     setBusResults(null);
     setTrainResults(null);
     setFlightResults(results);

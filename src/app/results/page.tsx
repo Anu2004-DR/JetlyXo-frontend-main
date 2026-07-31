@@ -14,7 +14,7 @@ function ResultsPageContent() {
   const from = params.get("from") || "";
   const to = params.get("to") || "";
   const departureDate = params.get("departureDate") || "";
-
+  const fareType = params.get("fareType") || "Regular";
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +34,7 @@ function ResultsPageContent() {
             children: 0,
             infants: 0,
             cabin: "ECONOMY",
-            fareType: "Regular",
+            fareType,
             tripType: "ONE_WAY",
           });
         } else if (type === "bus") {
@@ -55,7 +55,6 @@ function ResultsPageContent() {
     loadResults();
   }, [type, from, to]);
 
-  
 
 const handleBookNow = (item: any) => {
   let target = "";

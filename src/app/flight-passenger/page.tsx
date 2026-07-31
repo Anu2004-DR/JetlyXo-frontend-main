@@ -34,6 +34,25 @@ const tId = params.get("tId") ?? "";
 
   const [loading, setLoading] = useState(false);
 
+  const calculateAge = (dateOfBirth: string) => {
+    if (!dateOfBirth) return "";
+  
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+  
+    let years = today.getFullYear() - birthDate.getFullYear();
+  
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      years--;
+    }
+  
+    return Math.max(0, years).toString();
+  };
   async function handleContinue() {
     try {
       setLoading(true);
@@ -53,6 +72,11 @@ const tId = params.get("tId") ?? "";
 
       if (!dob) {
         toast.warning("Please select your date of birth.");
+        return;
+      }
+
+      if (!age) {
+        toast.warning("Age could not be calculated.");
         return;
       }
       
@@ -187,18 +211,23 @@ if (!did) {
 
 <input
   type="date"
+  max={new Date().toISOString().split("T")[0]}
   className="w-full p-2 rounded bg-slate-700"
   value={dob}
-  onChange={(e) => setDob(e.target.value)}
+  onChange={(e) => {
+    const selectedDob = e.target.value;
+    setDob(selectedDob);
+    setAge(calculateAge(selectedDob));
+  }}
 />
 
-        <input
-          type="number"
-          className="w-full p-2 rounded bg-slate-700"
-          placeholder="Age"
-          value={age}
-          onChange={(e) => setAge(e.target.value)}
-        />
+<input
+  type="text"
+  className="w-full p-2 rounded bg-slate-600 cursor-not-allowed"
+  placeholder="Age"
+  value={age}
+  readOnly
+/>
 
         <input
           className="w-full p-2 rounded bg-slate-700"

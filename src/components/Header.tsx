@@ -1,11 +1,7 @@
 "use client";
 
 import Link from "next/link";
-<<<<<<< HEAD
-import { motion } from "framer-motion";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-=======
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
@@ -16,7 +12,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
->>>>>>> 5aca903 (Initial frontend project)
+
 import { getToken, getUser, logout } from "@/lib/auth";
 
 export default function Header() {
@@ -25,7 +21,7 @@ export default function Header() {
 
   const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
-<<<<<<< HEAD
+
 
   useEffect(() => {
     const checkAuth = () => {
@@ -34,7 +30,7 @@ export default function Header() {
 
       setLoggedIn(!!token);
       setUser(currentUser);
-=======
+
   const [open, setOpen] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -43,7 +39,6 @@ export default function Header() {
     const checkAuth = () => {
       setLoggedIn(!!getToken());
       setUser(getUser());
->>>>>>> 5aca903 (Initial frontend project)
     };
 
     checkAuth();
@@ -55,7 +50,7 @@ export default function Header() {
     };
   }, [pathname]);
 
-<<<<<<< HEAD
+
   const handleLogin = () => {
     router.push("/login");
   };
@@ -183,7 +178,7 @@ export default function Header() {
             </>
           )}
         </div>
-=======
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -409,7 +404,7 @@ export default function Header() {
             </AnimatePresence>
           </div>
         )}
->>>>>>> 5aca903 (Initial frontend project)
+
       </div>
     </motion.header>
   );

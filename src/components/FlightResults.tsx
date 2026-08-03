@@ -242,9 +242,17 @@ export default function FlightResults({
       
       const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
       
-      const [maxPrice, setMaxPrice] = useState(25000);
-    
+      const [maxPrice, setMaxPrice] = useState(0);
 
+useEffect(() => {
+  if (flightList.length > 0) {
+    const highest = Math.max(
+      ...flightList.map(f => Number(f.price ?? 0))
+    );
+
+    setMaxPrice(highest);
+  }
+}, [flightList]);
   /* ---------------- SYNC PROPS ---------------- */
 
   useEffect(() => {
@@ -336,7 +344,9 @@ export default function FlightResults({
         );
       }
     
-      list = list.filter(f => f.priceNumber <= maxPrice);
+      if (maxPrice > 0) {
+        list = list.filter(f => f.priceNumber <= maxPrice);
+      }
     
       return list;
     
@@ -399,7 +409,13 @@ export default function FlightResults({
       return list;
 
     }, [filteredFlights, sortBy]);
-
+    console.log({
+      flightList,
+      normalizedFlights,
+      filteredFlights,
+      sortedFlights,
+      maxPrice,
+    });
     if (!sortedFlights.length) {
   return (
     <div className="glass-card p-8 text-center">
@@ -453,7 +469,9 @@ return (
 
       setSelectedAirlines([]);
 
-      setMaxPrice(25000);
+      setMaxPrice(
+        Math.max(...flightList.map(f => Number(f.price ?? 0)))
+      );
 
     }}
     className="text-cyan-400 text-sm hover:text-cyan-300"
@@ -472,20 +490,18 @@ return (
   </h4>
 
   <input
-    type="range"
-    min={2000}
-    max={25000}
-    step={500}
-    value={maxPrice}
-    onChange={(e) =>
-      setMaxPrice(Number(e.target.value))
-    }
+  type="range"
+  min={0}
+  max={Math.max(maxPrice, 1000)}
+  step={500}
+  value={maxPrice}
+  onChange={(e) => setMaxPrice(Number(e.target.value))}
     className="w-full accent-cyan-500"
   />
 
   <div className="flex justify-between mt-3 text-sm text-white/60">
 
-    <span>₹2,000</span>
+    <span>₹0</span>
 
     <span>
       ₹{maxPrice.toLocaleString("en-IN")}

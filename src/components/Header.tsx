@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
 import {
   Menu,
   X,
@@ -27,20 +28,20 @@ export default function Header() {
 
   const profileRef = useRef<HTMLDivElement>(null);
 
+  const syncAuth = useCallback(() => {
+    setLoggedIn(!!getToken());
+    setUser(getUser());
+  }, []);
+
   useEffect(() => {
-    const syncAuth = () => {
-      setLoggedIn(!!getToken());
-      setUser(getUser());
-    };
-
     syncAuth();
-
+  
     window.addEventListener("storage", syncAuth);
-
+  
     return () => {
       window.removeEventListener("storage", syncAuth);
     };
-  }, [pathname]);
+  }, [pathname, syncAuth]);
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -139,6 +140,7 @@ export default function Header() {
               <button
                 onClick={() =>
                   router.push("/login")
+                  
                 }
                 className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10"
               >
@@ -248,11 +250,15 @@ export default function Header() {
                     <div className="border-t border-white/10" />
 
                     <button
-                      onClick={() => {
-                        logout();
-                        router.push("/");
-                        router.refresh();
-                      }}
+                        onClick={() => {
+                          logout();
+                          syncAuth();
+                        
+                          setProfileOpen(false);
+                          setMobileOpen(false);
+                        
+                          router.push("/");
+                        }}
                       className="flex w-full items-center gap-3 px-5 py-4 text-red-400 hover:bg-red-500/10"
                     >
                       <LogOut size={18} />

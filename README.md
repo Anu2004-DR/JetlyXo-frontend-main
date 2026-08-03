@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 5aca903 (Initial frontend project)
 # JetlyXO – AI-Powered Travel Booking Platform
 
 A modern, responsive travel booking UI with a premium dark navy theme, glassmorphism, and AI-focused features.
@@ -64,3 +68,9 @@ src/
     Trust.tsx
     Footer.tsx
 ```
+<<<<<<< HEAD
+=======
+=======
+# jetlyxo-frontend
+>>>>>>> a6798e3e76a245bba636a7efb140a1b42b604231
+>>>>>>> 5aca903 (Initial frontend project)
